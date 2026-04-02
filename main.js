@@ -32,6 +32,8 @@ let fieldType = 'gaussian';
 let ellipsoidS = 2.0;
 let logSumExpK = 0.5;
 let polyBlendH = 0.5;
+let ricciN = 4.0;
+let ricciT = 0.3;
 
 // ドラッグ操作用
 let draggedGaussian = null;
@@ -117,6 +119,7 @@ const polyBlendHControl = document.getElementById('polyBlendHControl');
 function updateSliderState() {
   const isLogSumExpMode = fieldType === 'ellipsoidLogSumExp';
   const isPolyMinMode = fieldType === 'ellipsoidPolyMin';
+  const isRicciMode = fieldType === 'ellipsoidRicci';
   
   ellipsoidSSlider.disabled = false;
   if (ellipsoidSControl) {
@@ -131,6 +134,16 @@ function updateSliderState() {
   polyBlendHSlider.disabled = !isPolyMinMode;
   if (polyBlendHControl) {
     polyBlendHControl.style.opacity = isPolyMinMode ? '1' : '0.5';
+  }
+  
+  ricciNSlider.disabled = !isRicciMode;
+  if (ricciNControl) {
+    ricciNControl.style.opacity = isRicciMode ? '1' : '0.5';
+  }
+  
+  ricciTSlider.disabled = !isRicciMode;
+  if (ricciTControl) {
+    ricciTControl.style.opacity = isRicciMode ? '1' : '0.5';
   }
 }
 
@@ -153,6 +166,26 @@ fieldTypeRadios.forEach(radio => {
     updateSliderState();
     render();
   });
+});
+
+// Ricci n パラメータ
+const ricciNSlider = document.getElementById('ricciNSlider');
+const ricciNValue = document.getElementById('ricciNValue');
+const ricciNControl = document.getElementById('ricciNControl');
+ricciNSlider.addEventListener('input', (e) => {
+  ricciN = parseFloat(e.target.value);
+  ricciNValue.textContent = ricciN.toFixed(1);
+  render();
+});
+
+// Ricci T パラメータ
+const ricciTSlider = document.getElementById('ricciTSlider');
+const ricciTValue = document.getElementById('ricciTValue');
+const ricciTControl = document.getElementById('ricciTControl');
+ricciTSlider.addEventListener('input', (e) => {
+  ricciT = parseFloat(e.target.value);
+  ricciTValue.textContent = ricciT.toFixed(2);
+  render();
 });
 
 // 半径 s パラメータ
@@ -273,6 +306,12 @@ updateSliderState();
 // スライダーの初期値を明示的に設定
 ellipsoidSSlider.value = ellipsoidS;
 ellipsoidSValue.textContent = ellipsoidS.toFixed(2);
+
+ricciNSlider.value = ricciN;
+ricciNValue.textContent = ricciN.toFixed(1);
+
+ricciTSlider.value = ricciT;
+ricciTValue.textContent = ricciT.toFixed(2);
 
 logSumExpKSlider.value = logSumExpK;
 logSumExpKValue.textContent = logSumExpK.toFixed(2);

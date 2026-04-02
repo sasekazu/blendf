@@ -117,6 +117,20 @@ function ellipsoidRUnionField(x, y, s = 1.0) {
   return f;
 }
 
+// Ricci blending
+function ricciField(x, y, s = 1.0, n = 4.0, T = 0.3) {
+  let sum = 0;
+
+  for (const g of gaussians) {
+    const v = ellipsoidValue(x, y, g, s);
+    const phi = Math.max(-v, 0.0); // inside contribution only
+    sum += Math.pow(phi, n);
+  }
+
+  const Phi = Math.pow(sum, 1.0 / n);
+  return T - Phi;   // 0-level set
+}
+
 // 合成フィールド値を計算
 function fieldValue(x, y) {
   switch (fieldType) {
@@ -132,6 +146,8 @@ function fieldValue(x, y) {
       return ellipsoidPolyMinField(x, y, ellipsoidS, polyBlendH);
     case 'ellipsoidRUnion':
       return ellipsoidRUnionField(x, y, ellipsoidS);
+    case 'ellipsoidRicci':
+      return ricciField(x, y, ellipsoidS, ricciN, ricciT);
     default:
       return 0;
   }
@@ -150,6 +166,7 @@ function singleFieldValue(x, y, gaussianIndex) {
     case 'ellipsoidLogSumExp':
     case 'ellipsoidPolyMin':
     case 'ellipsoidRUnion':
+    case 'ellipsoidRicci':
       return ellipsoidValue(x, y, g, ellipsoidS);
     default:
       return 0;
