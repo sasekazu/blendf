@@ -82,6 +82,12 @@ html, body {
   gap: 8px;
 }
 
+.slider-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .slider-control label {
   font-size: 14px;
   color: #ccc;
@@ -101,7 +107,6 @@ html, body {
   font-size: 14px;
   color: #eee;
   font-family: monospace;
-  text-align: center;
 }
 
 .action-button {

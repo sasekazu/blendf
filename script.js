@@ -18,7 +18,7 @@ let gaussians = [
 // 等値線レベル数
 let contourLevels = 10;
 // 等値線の間隔（固定間隔モード）
-let contourStep = 0.5;
+let contourStep = 0.1;  // デフォルトはガウシアン用
 // サンプリング間隔（小さいほどきれい・重い）
 let gridStep = 4;
 
@@ -384,6 +384,20 @@ function updateSliderState() {
 fieldTypeRadios.forEach(radio => {
   radio.addEventListener('change', (e) => {
     fieldType = e.target.value;
+    
+    // フィールドタイプに応じてcontourStepを自動調整
+    if (fieldType === 'gaussian') {
+      contourStep = 0.1;
+    } else {
+      contourStep = 1.0;
+    }
+    
+    // スライダーとテキスト表示を更新
+    const contourStepSlider = document.getElementById('contourStepSlider');
+    const contourStepValue = document.getElementById('contourStepValue');
+    contourStepSlider.value = contourStep;
+    contourStepValue.textContent = contourStep.toFixed(2);
+    
     updateSliderState();
     render();
   });
@@ -467,6 +481,12 @@ scaleDownButton.addEventListener('click', () => {
 });
 
 // 初期状態を設定
+// ページロード時に明示的にガウシアンを選択（ブラウザの自動復元を上書き）
+const gaussianRadio = document.querySelector('input[name="fieldType"][value="gaussian"]');
+if (gaussianRadio) {
+  gaussianRadio.checked = true;
+  fieldType = 'gaussian';
+}
 updateSliderState();
 
 render();

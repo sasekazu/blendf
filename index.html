@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,54 +11,64 @@
     <canvas id="view" width="900" height="700"></canvas>
     <div class="controls">
       <div class="radio-group">
-        <label>フィールドタイプ:</label>
+        <label>Field Type:</label>
         <div class="radio-options">
           <label class="radio-label">
-            <input type="radio" name="fieldType" value="gaussian" checked>
-            <span>Gaussian和</span>
+            <input type="radio" name="fieldType" value="gaussian" checked autocomplete="off">
+            <span>Gaussian Sum</span>
           </label>
           <label class="radio-label">
-            <input type="radio" name="fieldType" value="ellipsoidMin">
-            <span>楕円体 hard min</span>
+            <input type="radio" name="fieldType" value="ellipsoidMin" autocomplete="off">
+            <span>Ellipsoid Hard Min</span>
           </label>
           <label class="radio-label">
-            <input type="radio" name="fieldType" value="ellipsoidLogSumExp">
-            <span>楕円体 log-sum-exp</span>
+            <input type="radio" name="fieldType" value="ellipsoidLogSumExp" autocomplete="off">
+            <span>Ellipsoid Log-Sum-Exp</span>
           </label>
         </div>
       </div>
       
       <div class="slider-control" id="ellipsoidSControl">
-        <label for="ellipsoidSSlider">半径 s:</label>
+        <div class="slider-label-row">
+          <label for="ellipsoidSSlider">Radius s:</label>
+          <span id="ellipsoidSValue">2.00</span>
+        </div>
         <input type="range" id="ellipsoidSSlider" min="0.1" max="3.0" step="0.1" value="2.0">
-        <span id="ellipsoidSValue">2.00</span>
       </div>
       
       <div class="slider-control" id="logSumExpKControl">
-        <label for="logSumExpKSlider">log-sum-exp k:</label>
+        <div class="slider-label-row">
+          <label for="logSumExpKSlider">Log-Sum-Exp k:</label>
+          <span id="logSumExpKValue">0.50</span>
+        </div>
         <input type="range" id="logSumExpKSlider" min="0.01" max="1.5" step="0.01" value="0.5">
-        <span id="logSumExpKValue">0.50</span>
       </div>
       
       <div class="slider-control">
-        <label for="contourLevelsSlider">等値線レベル数:</label>
+        <div class="slider-label-row">
+          <label for="contourLevelsSlider">Contour Levels:</label>
+          <span id="contourLevelsValue">10</span>
+        </div>
         <input type="range" id="contourLevelsSlider" min="1" max="20" step="1" value="10">
-        <span id="contourLevelsValue">10</span>
       </div>
       
       <div class="slider-control">
-        <label for="contourStepSlider">等値線間隔:</label>
-        <input type="range" id="contourStepSlider" min="0.1" max="5.0" step="0.1" value="0.5">
-        <span id="contourStepValue">0.50</span>
+        <div class="slider-label-row">
+          <label for="contourStepSlider">Contour Step:</label>
+          <span id="contourStepValue">0.10</span>
+        </div>
+        <input type="range" id="contourStepSlider" min="0.1" max="5.0" step="0.1" value="0.1">
       </div>
       
       <div class="slider-control">
-        <label for="gridStepSlider">サンプリング間隔:</label>
+        <div class="slider-label-row">
+          <label for="gridStepSlider">Grid Step:</label>
+          <span id="gridStepValue">4</span>
+        </div>
         <input type="range" id="gridStepSlider" min="1" max="10" step="1" value="4">
-        <span id="gridStepValue">4</span>
       </div>
       
-      <button id="randomizeButton" class="action-button">ガウシアンをランダム化</button>
+      <button id="randomizeButton" class="action-button">Randomize Gaussians</button>
       
       <div class="button-group">
         <button id="scaleDownButton" class="scale-button">-10%</button>
