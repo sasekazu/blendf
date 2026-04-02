@@ -31,6 +31,7 @@ let showHeatmap = true;
 let fieldType = 'gaussian';
 let ellipsoidS = 2.0;
 let logSumExpK = 0.5;
+let polyBlendH = 0.5;
 
 // ドラッグ操作用
 let draggedGaussian = null;
@@ -109,9 +110,13 @@ const ellipsoidSControl = document.getElementById('ellipsoidSControl');
 const logSumExpKSlider = document.getElementById('logSumExpKSlider');
 const logSumExpKValue = document.getElementById('logSumExpKValue');
 const logSumExpKControl = document.getElementById('logSumExpKControl');
+const polyBlendHSlider = document.getElementById('polyBlendHSlider');
+const polyBlendHValue = document.getElementById('polyBlendHValue');
+const polyBlendHControl = document.getElementById('polyBlendHControl');
 
 function updateSliderState() {
   const isLogSumExpMode = fieldType === 'ellipsoidLogSumExp';
+  const isPolyMinMode = fieldType === 'ellipsoidPolyMin';
   
   ellipsoidSSlider.disabled = false;
   if (ellipsoidSControl) {
@@ -121,6 +126,11 @@ function updateSliderState() {
   logSumExpKSlider.disabled = !isLogSumExpMode;
   if (logSumExpKControl) {
     logSumExpKControl.style.opacity = isLogSumExpMode ? '1' : '0.5';
+  }
+  
+  polyBlendHSlider.disabled = !isPolyMinMode;
+  if (polyBlendHControl) {
+    polyBlendHControl.style.opacity = isPolyMinMode ? '1' : '0.5';
   }
 }
 
@@ -156,6 +166,13 @@ ellipsoidSSlider.addEventListener('input', (e) => {
 logSumExpKSlider.addEventListener('input', (e) => {
   logSumExpK = parseFloat(e.target.value);
   logSumExpKValue.textContent = logSumExpK.toFixed(2);
+  render();
+});
+
+// polynomial blend h パラメータ
+polyBlendHSlider.addEventListener('input', (e) => {
+  polyBlendH = parseFloat(e.target.value);
+  polyBlendHValue.textContent = polyBlendH.toFixed(2);
   render();
 });
 
@@ -259,6 +276,9 @@ ellipsoidSValue.textContent = ellipsoidS.toFixed(2);
 
 logSumExpKSlider.value = logSumExpK;
 logSumExpKValue.textContent = logSumExpK.toFixed(2);
+
+polyBlendHSlider.value = polyBlendH;
+polyBlendHValue.textContent = polyBlendH.toFixed(2);
 
 contourLevelsSlider.value = contourLevels;
 contourLevelsValue.textContent = contourLevels;

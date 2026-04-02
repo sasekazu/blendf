@@ -87,6 +87,21 @@ function ellipsoidLogSumExpField(x, y, s = 1.0, k = 5.0) {
   return vmin - (1.0 / k) * Math.log(S);
 }
 
+// Polynomial smooth min (pairwise)
+function sminPoly(a, b, h) {
+  const t = Math.max(h - Math.abs(a - b), 0.0) / h;
+  return Math.min(a, b) - 0.25 * h * t * t;
+}
+
+// 楕円体 polynomial smooth min
+function ellipsoidPolyMinField(x, y, s = 1.0, h = 0.5) {
+  let f = ellipsoidValue(x, y, gaussians[0], s);
+  for (let i = 1; i < gaussians.length; i++) {
+    f = sminPoly(f, ellipsoidValue(x, y, gaussians[i], s), h);
+  }
+  return f;
+}
+
 // 合成フィールド値を計算
 function fieldValue(x, y) {
   switch (fieldType) {
@@ -98,6 +113,8 @@ function fieldValue(x, y) {
       return ellipsoidMinField(x, y, ellipsoidS);
     case 'ellipsoidLogSumExp':
       return ellipsoidLogSumExpField(x, y, ellipsoidS, logSumExpK);
+    case 'ellipsoidPolyMin':
+      return ellipsoidPolyMinField(x, y, ellipsoidS, polyBlendH);
     default:
       return 0;
   }
@@ -114,6 +131,7 @@ function singleFieldValue(x, y, gaussianIndex) {
     case 'ellipsoidSum':
     case 'ellipsoidMin':
     case 'ellipsoidLogSumExp':
+    case 'ellipsoidPolyMin':
       return ellipsoidValue(x, y, g, ellipsoidS);
     default:
       return 0;
