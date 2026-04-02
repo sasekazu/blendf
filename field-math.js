@@ -102,6 +102,21 @@ function ellipsoidPolyMinField(x, y, s = 1.0, h = 0.5) {
   return f;
 }
 
+// R-function (R-union)
+function rUnion(a, b) {
+  return a + b - Math.sqrt(a * a + b * b);
+}
+
+// 楕円体 R-union
+function ellipsoidRUnionField(x, y, s = 1.0) {
+  let f = ellipsoidValue(x, y, gaussians[0], s);
+  for (let i = 1; i < gaussians.length; i++) {
+    const v = ellipsoidValue(x, y, gaussians[i], s);
+    f = rUnion(f, v);
+  }
+  return f;
+}
+
 // 合成フィールド値を計算
 function fieldValue(x, y) {
   switch (fieldType) {
@@ -115,6 +130,8 @@ function fieldValue(x, y) {
       return ellipsoidLogSumExpField(x, y, ellipsoidS, logSumExpK);
     case 'ellipsoidPolyMin':
       return ellipsoidPolyMinField(x, y, ellipsoidS, polyBlendH);
+    case 'ellipsoidRUnion':
+      return ellipsoidRUnionField(x, y, ellipsoidS);
     default:
       return 0;
   }
@@ -132,6 +149,7 @@ function singleFieldValue(x, y, gaussianIndex) {
     case 'ellipsoidMin':
     case 'ellipsoidLogSumExp':
     case 'ellipsoidPolyMin':
+    case 'ellipsoidRUnion':
       return ellipsoidValue(x, y, g, ellipsoidS);
     default:
       return 0;
