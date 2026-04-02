@@ -47,9 +47,9 @@
       <div class="slider-control">
         <div class="slider-label-row">
           <label for="contourLevelsSlider">Contour Levels:</label>
-          <span id="contourLevelsValue">10</span>
+          <span id="contourLevelsValue">1</span>
         </div>
-        <input type="range" id="contourLevelsSlider" min="1" max="20" step="1" value="10">
+        <input type="range" id="contourLevelsSlider" min="1" max="20" step="1" value="1">
       </div>
       
       <div class="slider-control">
@@ -66,6 +66,27 @@
           <span id="gridStepValue">4</span>
         </div>
         <input type="range" id="gridStepSlider" min="1" max="10" step="1" value="4">
+      </div>
+      
+      <div class="checkbox-control">
+        <label class="checkbox-label">
+          <input type="checkbox" id="showHeatmapCheckbox">
+          <span>Show Heatmap</span>
+        </label>
+      </div>
+      
+      <div class="checkbox-control">
+        <label class="checkbox-label">
+          <input type="checkbox" id="showCombinedContoursCheckbox" checked>
+          <span>Show Combined Contours</span>
+        </label>
+      </div>
+      
+      <div class="checkbox-control">
+        <label class="checkbox-label">
+          <input type="checkbox" id="showIndividualCheckbox">
+          <span>Show Individual Contours</span>
+        </label>
       </div>
       
       <button id="randomizeButton" class="action-button">Randomize Gaussians</button>

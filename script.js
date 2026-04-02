@@ -16,11 +16,15 @@ let gaussians = [
 ];
 
 // 等値線レベル数
-let contourLevels = 10;
+let contourLevels = 1;
 // 等値線の間隔（固定間隔モード）
 let contourStep = 0.1;  // デフォルトはガウシアン用
 // サンプリング間隔（小さいほどきれい・重い）
 let gridStep = 4;
+// 表示制御
+let showIndividualContours = false;  // 個別の等高線
+let showCombinedContours = true;    // 合成場の等高線
+let showHeatmap = false;            // 合成場の色描画
 
 // フィールドタイプの選択
 let fieldType = 'gaussian'; // 'gaussian', 'ellipsoidSum', 'ellipsoidMin', 'ellipsoidLogSumExp'
@@ -132,6 +136,23 @@ function fieldValue(x, y) {
   }
 }
 
+// 個別のガウシアン/楕円のフィールド値（単体）
+function singleFieldValue(x, y, gaussianIndex) {
+  const g = gaussians[gaussianIndex];
+  
+  switch (fieldType) {
+    case 'gaussian':
+      const tau = computeTauFromS(ellipsoidS);
+      return -gaussianValue(x, y, g) + tau;
+    case 'ellipsoidSum':
+    case 'ellipsoidMin':
+    case 'ellipsoidLogSumExp':
+      return ellipsoidValue(x, y, g, ellipsoidS);
+    default:
+      return 0;
+  }
+}
+
 function computeFieldGrid() {
   const cols = Math.floor(width / gridStep) + 1;
   const rows = Math.floor(height / gridStep) + 1;
@@ -155,6 +176,30 @@ function computeFieldGrid() {
   return { values, cols, rows, minV, maxV };
 }
 
+// 個別のガウシアン/楕円のグリッドを計算
+function computeSingleFieldGrid(gaussianIndex) {
+  const cols = Math.floor(width / gridStep) + 1;
+  const rows = Math.floor(height / gridStep) + 1;
+  const values = new Array(rows);
+
+  let minV = Infinity;
+  let maxV = -Infinity;
+
+  for (let j = 0; j < rows; j++) {
+    values[j] = new Array(cols);
+    for (let i = 0; i < cols; i++) {
+      const x = i * gridStep;
+      const y = j * gridStep;
+      const v = singleFieldValue(x, y, gaussianIndex);
+      values[j][i] = v;
+      if (v < minV) minV = v;
+      if (v > maxV) maxV = v;
+    }
+  }
+
+  return { values, cols, rows, minV, maxV };
+}
+
 function lerp(a, b, t) {
   return a + (b - a) * t;
 }
@@ -169,11 +214,8 @@ function interpPoint(x1, y1, v1, x2, y2, v2, iso) {
 }
 
 // marching squares の簡易実装
-function drawContours(grid) {
+function drawCombinedContours(grid) {
   const { values, cols, rows, minV, maxV } = grid;
-
-  // 背景に軽く濃淡も入れておく
-  drawHeatmap(grid);
 
   // 固定レベルの等高線を描画（0を中心に、固定間隔で負と正の両側に描画）
   const levels = [];
@@ -188,18 +230,59 @@ function drawContours(grid) {
     }
   }
 
+  drawContoursAtLevels(grid, levels, false, '#ffff00', '#ffffff');
+}
+
+// 個別の等高線を描画
+function drawIndividualContours() {
+  const individualColors = [
+    'rgba(100, 150, 255, 0.6)',  // 青系
+    'rgba(100, 255, 150, 0.6)',  // 緑系
+    'rgba(255, 100, 150, 0.6)',  // ピンク系
+  ];
+
+  // 合成後と同じレベルを使用
+  const levels = [];
+  if (contourLevels === 1) {
+    levels.push(0);
+  } else {
+    const halfLevels = Math.floor(contourLevels / 2);
+    for (let i = -halfLevels; i <= halfLevels; i++) {
+      levels.push(i * contourStep);
+    }
+  }
+
+  for (let gIdx = 0; gIdx < gaussians.length; gIdx++) {
+    const grid = computeSingleFieldGrid(gIdx);
+    const color = individualColors[gIdx % individualColors.length];
+    drawContoursAtLevels(grid, levels, true, color, color);
+  }
+}
+
+// 指定されたレベルで等高線を描画（実線または破線）
+function drawContoursAtLevels(grid, levels, dashed, zeroColor, otherColor) {
+  const { values, cols, rows } = grid;
+
   for (let levelIdx = 0; levelIdx < levels.length; levelIdx++) {
     const iso = levels[levelIdx];
 
     ctx.beginPath();
-    ctx.lineWidth = iso === 0 ? 2.5 : 1.2;
     
-    // 0のレベルは黄色で強調、それ以外は白系
-    if (iso === 0) {
-      ctx.strokeStyle = '#ffff00';
+    if (dashed) {
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 0.8;
+      ctx.strokeStyle = zeroColor;  // 個別の場合は全て同じ色
     } else {
-      const tone = Math.floor(180 + 40 * (levelIdx / levels.length));
-      ctx.strokeStyle = `rgb(${tone}, ${tone}, ${tone})`;
+      ctx.setLineDash([]);
+      ctx.lineWidth = iso === 0 ? 2.5 : 1.2;
+      
+      // 0のレベルは黄色で強調、それ以外は白系
+      if (iso === 0) {
+        ctx.strokeStyle = zeroColor;
+      } else {
+        const tone = Math.floor(180 + 40 * (levelIdx / levels.length));
+        ctx.strokeStyle = otherColor === '#ffffff' ? `rgb(${tone}, ${tone}, ${tone})` : otherColor;
+      }
     }
 
     for (let j = 0; j < rows - 1; j++) {
@@ -282,7 +365,22 @@ function drawGaussianCenters() {
 function render() {
   ctx.clearRect(0, 0, width, height);
   const grid = computeFieldGrid();
-  drawContours(grid);
+  
+  // 合成場の色描画（ヒートマップ）
+  if (showHeatmap) {
+    drawHeatmap(grid);
+  }
+  
+  // 合成場の等高線
+  if (showCombinedContours) {
+    drawCombinedContours(grid);
+  }
+  
+  // 個別の等高線を表示
+  if (showIndividualContours) {
+    drawIndividualContours();
+  }
+  
   drawGaussianCenters();
 }
 
@@ -441,6 +539,25 @@ const gridStepValue = document.getElementById('gridStepValue');
 gridStepSlider.addEventListener('input', (e) => {
   gridStep = parseInt(e.target.value);
   gridStepValue.textContent = gridStep;
+  render();
+});
+
+// 表示オプションのチェックボックス
+const showHeatmapCheckbox = document.getElementById('showHeatmapCheckbox');
+showHeatmapCheckbox.addEventListener('change', (e) => {
+  showHeatmap = e.target.checked;
+  render();
+});
+
+const showCombinedContoursCheckbox = document.getElementById('showCombinedContoursCheckbox');
+showCombinedContoursCheckbox.addEventListener('change', (e) => {
+  showCombinedContours = e.target.checked;
+  render();
+});
+
+const showIndividualCheckbox = document.getElementById('showIndividualCheckbox');
+showIndividualCheckbox.addEventListener('change', (e) => {
+  showIndividualContours = e.target.checked;
   render();
 });
 
