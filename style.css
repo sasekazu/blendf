@@ -38,23 +38,39 @@ html, body {
   color: #ccc;
 }
 
-.controls select {
-  padding: 6px 12px;
-  background: #333;
-  border: 1px solid #555;
-  border-radius: 4px;
-  color: #eee;
+.radio-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.radio-group > label {
   font-size: 14px;
+  color: #ccc;
+  margin-right: 5px;
+}
+
+.radio-options {
+  display: flex;
+  gap: 15px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   cursor: pointer;
+  font-size: 14px;
+  color: #ccc;
 }
 
-.controls select:hover {
-  background: #3a3a3a;
+.radio-label:hover {
+  color: #fff;
 }
 
-.controls select:focus {
-  outline: none;
-  border-color: #777;
+.radio-label input[type="radio"] {
+  cursor: pointer;
+  accent-color: #ff8844;
 }
 
 .slider-control {
@@ -81,14 +97,6 @@ html, body {
   color: #eee;
   min-width: 40px;
   font-family: monospace;
-}
-
-.slider-control .note {
-  font-size: 12px;
-  color: #888;
-  font-family: sans-serif;
-  font-style: italic;
-  min-width: auto;
 }
 
 canvas {

@@ -16,15 +16,14 @@ const gaussians = [
 ];
 
 // 等値線レベル数
-const contourLevels = 1;
+const contourLevels = 10;
 // サンプリング間隔（小さいほどきれい・重い）
 const gridStep = 4;
 
 // フィールドタイプの選択
 let fieldType = 'gaussian'; // 'gaussian', 'ellipsoidSum', 'ellipsoidMin', 'ellipsoidLogSumExp'
-let ellipsoidS = 2.0; // 楕円体のスケールパラメータ（デフォルトで2σに対応）
-let gaussianTau = 0.2; // Gaussian等値面レベル
-let logSumExpK = 5.0; // log-sum-expのkパラメータ
+let ellipsoidS = 2.0; // スケールパラメータ（全モード共通、デフォルトで2σに対応）
+let logSumExpK = 0.5; // log-sum-expのkパラメータ
 
 // ドラッグ操作用の変数
 let draggedGaussian = null;
@@ -46,12 +45,20 @@ function gaussianValue(x, y, g) {
   return g.amp * Math.exp(-0.5 * q);
 }
 
+// sから対応するτを計算（同じMahalanobis半径sに対応する等値面）
+function computeTauFromS(s) {
+  return Math.exp(-0.5 * s * s);
+}
+
 // Gaussian和のimplicit形式（F(x) = 0が等値面）
-function gaussianSumField(x, y, tau = 0.2) {
+function gaussianSumField(x, y, s = 1.0) {
+  const tau = computeTauFromS(s);
+
   let sum = 0;
   for (const g of gaussians) {
     sum += gaussianValue(x, y, g);
   }
+
   return sum - tau;
 }
 
@@ -111,7 +118,7 @@ function ellipsoidLogSumExpField(x, y, s = 1.0, k = 5.0) {
 function fieldValue(x, y) {
   switch (fieldType) {
     case 'gaussian':
-      return gaussianSumField(x, y, gaussianTau);
+      return gaussianSumField(x, y, ellipsoidS);
     case 'ellipsoidSum':
       return ellipsoidSumField(x, y, ellipsoidS);
     case 'ellipsoidMin':
@@ -358,10 +365,7 @@ canvas.addEventListener('mouseleave', () => {
 });
 
 // フィールドタイプの切り替え
-const fieldTypeSelect = document.getElementById('fieldTypeSelect');
-const gaussianTauSlider = document.getElementById('gaussianTauSlider');
-const gaussianTauValue = document.getElementById('gaussianTauValue');
-const gaussianTauControl = document.getElementById('gaussianTauControl');
+const fieldTypeRadios = document.querySelectorAll('input[name="fieldType"]');
 const ellipsoidSSlider = document.getElementById('ellipsoidSSlider');
 const ellipsoidSValue = document.getElementById('ellipsoidSValue');
 const ellipsoidSControl = document.getElementById('ellipsoidSControl');
@@ -371,20 +375,12 @@ const logSumExpKControl = document.getElementById('logSumExpKControl');
 
 // スライダーの有効/無効を切り替える関数
 function updateSliderState() {
-  const isGaussianMode = fieldType === 'gaussian';
-  const isEllipsoidMode = fieldType !== 'gaussian';
   const isLogSumExpMode = fieldType === 'ellipsoidLogSumExp';
   
-  // Gaussianモードでτスライダーを有効化
-  gaussianTauSlider.disabled = !isGaussianMode;
-  if (gaussianTauControl) {
-    gaussianTauControl.style.opacity = isGaussianMode ? '1' : '0.5';
-  }
-  
-  // 楕円体モードでsスライダーを有効化
-  ellipsoidSSlider.disabled = !isEllipsoidMode;
+  // sスライダーは常に有効（全モード共通）
+  ellipsoidSSlider.disabled = false;
   if (ellipsoidSControl) {
-    ellipsoidSControl.style.opacity = isEllipsoidMode ? '1' : '0.5';
+    ellipsoidSControl.style.opacity = '1';
   }
   
   // log-sum-expモードでkスライダーを有効化
@@ -394,20 +390,16 @@ function updateSliderState() {
   }
 }
 
-fieldTypeSelect.addEventListener('change', (e) => {
-  fieldType = e.target.value;
-  updateSliderState();
-  render();
+// ラジオボタンのイベントリスナー
+fieldTypeRadios.forEach(radio => {
+  radio.addEventListener('change', (e) => {
+    fieldType = e.target.value;
+    updateSliderState();
+    render();
+  });
 });
 
-// Gaussian τ パラメータの調整
-gaussianTauSlider.addEventListener('input', (e) => {
-  gaussianTau = parseFloat(e.target.value);
-  gaussianTauValue.textContent = gaussianTau.toFixed(2);
-  render();
-});
-
-// 楕円体 s パラメータの調整
+// 半径 s パラメータの調整（全モード共通）
 ellipsoidSSlider.addEventListener('input', (e) => {
   ellipsoidS = parseFloat(e.target.value);
   ellipsoidSValue.textContent = ellipsoidS.toFixed(2);
