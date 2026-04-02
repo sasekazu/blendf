@@ -16,15 +16,22 @@ const gaussians = [
 ];
 
 // 等値線レベル数
-const contourLevels = 10;
+const contourLevels = 1;
 // サンプリング間隔（小さいほどきれい・重い）
 const gridStep = 4;
+
+// フィールドタイプの選択
+let fieldType = 'gaussian'; // 'gaussian', 'ellipsoidSum', 'ellipsoidMin', 'ellipsoidLogSumExp'
+let ellipsoidS = 2.0; // 楕円体のスケールパラメータ（デフォルトで2σに対応）
+let gaussianTau = 0.2; // Gaussian等値面レベル
+let logSumExpK = 5.0; // log-sum-expのkパラメータ
 
 // ドラッグ操作用の変数
 let draggedGaussian = null;
 let isDragging = false;
 
-function gaussian2D(x, y, g) {
+// 個別のGaussian値を計算
+function gaussianValue(x, y, g) {
   const dx = x - g.x;
   const dy = y - g.y;
 
@@ -39,12 +46,81 @@ function gaussian2D(x, y, g) {
   return g.amp * Math.exp(-0.5 * q);
 }
 
-function fieldValue(x, y) {
+// Gaussian和のimplicit形式（F(x) = 0が等値面）
+function gaussianSumField(x, y, tau = 0.2) {
   let sum = 0;
   for (const g of gaussians) {
-    sum += gaussian2D(x, y, g);
+    sum += gaussianValue(x, y, g);
+  }
+  return sum - tau;
+}
+
+// 楕円体の implicit 関数
+function ellipsoidValue(x, y, g, s = 1.0) {
+  const dx = x - g.x;
+  const dy = y - g.y;
+  const c = Math.cos(g.theta);
+  const sn = Math.sin(g.theta);
+
+  // world -> local
+  const lx =  c * dx + sn * dy;
+  const ly = -sn * dx + c * dy;
+
+  // v_i(x) = d^T Sigma^{-1} d - s^2
+  return (lx * lx) / (g.sx * g.sx) + (ly * ly) / (g.sy * g.sy) - s * s;
+}
+
+// 楕円体関数の単純和
+function ellipsoidSumField(x, y, s = 1.0) {
+  let sum = 0;
+  for (const g of gaussians) {
+    sum += ellipsoidValue(x, y, g, s);
   }
   return sum;
+}
+
+// 楕円体 hard min
+function ellipsoidMinField(x, y, s = 1.0) {
+  let minV = Infinity;
+  for (const g of gaussians) {
+    const v = ellipsoidValue(x, y, g, s);
+    if (v < minV) minV = v;
+  }
+  return minV;
+}
+
+// 楕円体 soft-min (log-sum-exp)
+function ellipsoidLogSumExpField(x, y, s = 1.0, k = 5.0) {
+  let vmin = Infinity;
+  const vs = [];
+
+  for (const g of gaussians) {
+    const v = ellipsoidValue(x, y, g, s);
+    vs.push({ v, a: g.amp });
+    if (v < vmin) vmin = v;
+  }
+
+  let S = 0;
+  for (const item of vs) {
+    S += item.a * Math.exp(-k * (item.v - vmin));
+  }
+
+  return vmin - (1.0 / k) * Math.log(S);
+}
+
+function fieldValue(x, y) {
+  switch (fieldType) {
+    case 'gaussian':
+      return gaussianSumField(x, y, gaussianTau);
+    case 'ellipsoidSum':
+      return ellipsoidSumField(x, y, ellipsoidS);
+    case 'ellipsoidMin':
+      return ellipsoidMinField(x, y, ellipsoidS);
+    case 'ellipsoidLogSumExp':
+      return ellipsoidLogSumExpField(x, y, ellipsoidS, logSumExpK);
+    default:
+      return 0;
+  }
 }
 
 function computeFieldGrid() {
@@ -90,13 +166,33 @@ function drawContours(grid) {
   // 背景に軽く濃淡も入れておく
   drawHeatmap(grid);
 
-  for (let levelIdx = 1; levelIdx <= contourLevels; levelIdx++) {
-    const iso = lerp(minV, maxV, levelIdx / (contourLevels + 1));
+  // 固定レベルの等高線を描画（0を中心に、負と正の両側に描画）
+  const levels = [];
+  if (contourLevels === 1) {
+    // 1本だけなら0のレベルを描画（境界線）
+    levels.push(0);
+  } else {
+    // 複数本なら0を中心に等間隔で配置
+    const maxAbsValue = Math.max(Math.abs(minV), Math.abs(maxV));
+    const step = maxAbsValue / Math.ceil(contourLevels / 2);
+    for (let i = -Math.floor(contourLevels / 2); i <= Math.floor(contourLevels / 2); i++) {
+      levels.push(i * step);
+    }
+  }
+
+  for (let levelIdx = 0; levelIdx < levels.length; levelIdx++) {
+    const iso = levels[levelIdx];
 
     ctx.beginPath();
-    ctx.lineWidth = 1.2;
-    const tone = Math.floor(220 * (levelIdx / contourLevels));
-    ctx.strokeStyle = `rgb(${tone}, ${tone}, ${tone})`;
+    ctx.lineWidth = iso === 0 ? 2.5 : 1.2;
+    
+    // 0のレベルは黄色で強調、それ以外は白系
+    if (iso === 0) {
+      ctx.strokeStyle = '#ffff00';
+    } else {
+      const tone = Math.floor(180 + 40 * (levelIdx / levels.length));
+      ctx.strokeStyle = `rgb(${tone}, ${tone}, ${tone})`;
+    }
 
     for (let j = 0; j < rows - 1; j++) {
       for (let i = 0; i < cols - 1; i++) {
@@ -146,13 +242,30 @@ function drawHeatmap(grid) {
       const gx = Math.min(cols - 1, Math.floor(px / gridStep));
       const gy = Math.min(rows - 1, Math.floor(py / gridStep));
       const v = values[gy][gx];
-      const t = (v - minV) / Math.max(1e-12, maxV - minV);
-      const c = Math.floor(20 + 90 * t);
+      
+      // 0を中心としたdivergingカラーマップ: 負=青、0=白、正=赤
+      const absMax = Math.max(Math.abs(minV), Math.abs(maxV));
+      const normalized = v / Math.max(1e-12, absMax); // -1 ~ 1 の範囲に正規化
+      
+      let r, g, b;
+      if (normalized < 0) {
+        // 負の値: 青から白へ
+        const t = Math.abs(normalized); // 0 (白) ~ 1 (青)
+        r = Math.floor(255 * (1 - t * 0.8)); // 255 -> 51
+        g = Math.floor(255 * (1 - t * 0.8)); // 255 -> 51
+        b = 255; // 常に青成分は最大
+      } else {
+        // 正の値: 白から赤へ
+        const t = normalized; // 0 (白) ~ 1 (赤)
+        r = 255; // 常に赤成分は最大
+        g = Math.floor(255 * (1 - t * 0.8)); // 255 -> 51
+        b = Math.floor(255 * (1 - t * 0.8)); // 255 -> 51
+      }
 
       const idx = (py * width + px) * 4;
-      data[idx + 0] = c;
-      data[idx + 1] = c;
-      data[idx + 2] = c;
+      data[idx + 0] = r;
+      data[idx + 1] = g;
+      data[idx + 2] = b;
       data[idx + 3] = 255;
     }
   }
@@ -243,5 +356,72 @@ canvas.addEventListener('mouseleave', () => {
     canvas.style.cursor = 'default';
   }
 });
+
+// フィールドタイプの切り替え
+const fieldTypeSelect = document.getElementById('fieldTypeSelect');
+const gaussianTauSlider = document.getElementById('gaussianTauSlider');
+const gaussianTauValue = document.getElementById('gaussianTauValue');
+const gaussianTauControl = document.getElementById('gaussianTauControl');
+const ellipsoidSSlider = document.getElementById('ellipsoidSSlider');
+const ellipsoidSValue = document.getElementById('ellipsoidSValue');
+const ellipsoidSControl = document.getElementById('ellipsoidSControl');
+const logSumExpKSlider = document.getElementById('logSumExpKSlider');
+const logSumExpKValue = document.getElementById('logSumExpKValue');
+const logSumExpKControl = document.getElementById('logSumExpKControl');
+
+// スライダーの有効/無効を切り替える関数
+function updateSliderState() {
+  const isGaussianMode = fieldType === 'gaussian';
+  const isEllipsoidMode = fieldType !== 'gaussian';
+  const isLogSumExpMode = fieldType === 'ellipsoidLogSumExp';
+  
+  // Gaussianモードでτスライダーを有効化
+  gaussianTauSlider.disabled = !isGaussianMode;
+  if (gaussianTauControl) {
+    gaussianTauControl.style.opacity = isGaussianMode ? '1' : '0.5';
+  }
+  
+  // 楕円体モードでsスライダーを有効化
+  ellipsoidSSlider.disabled = !isEllipsoidMode;
+  if (ellipsoidSControl) {
+    ellipsoidSControl.style.opacity = isEllipsoidMode ? '1' : '0.5';
+  }
+  
+  // log-sum-expモードでkスライダーを有効化
+  logSumExpKSlider.disabled = !isLogSumExpMode;
+  if (logSumExpKControl) {
+    logSumExpKControl.style.opacity = isLogSumExpMode ? '1' : '0.5';
+  }
+}
+
+fieldTypeSelect.addEventListener('change', (e) => {
+  fieldType = e.target.value;
+  updateSliderState();
+  render();
+});
+
+// Gaussian τ パラメータの調整
+gaussianTauSlider.addEventListener('input', (e) => {
+  gaussianTau = parseFloat(e.target.value);
+  gaussianTauValue.textContent = gaussianTau.toFixed(2);
+  render();
+});
+
+// 楕円体 s パラメータの調整
+ellipsoidSSlider.addEventListener('input', (e) => {
+  ellipsoidS = parseFloat(e.target.value);
+  ellipsoidSValue.textContent = ellipsoidS.toFixed(2);
+  render();
+});
+
+// log-sum-exp k パラメータの調整
+logSumExpKSlider.addEventListener('input', (e) => {
+  logSumExpK = parseFloat(e.target.value);
+  logSumExpKValue.textContent = logSumExpK.toFixed(2);
+  render();
+});
+
+// 初期状態を設定
+updateSliderState();
 
 render();

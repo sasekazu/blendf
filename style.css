@@ -16,9 +16,79 @@ html, body {
   width: 100vw;
   height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+}
+
+.controls {
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  background: #222;
+  border: 1px solid #444;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.controls label {
+  font-size: 14px;
+  color: #ccc;
+}
+
+.controls select {
+  padding: 6px 12px;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #eee;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.controls select:hover {
+  background: #3a3a3a;
+}
+
+.controls select:focus {
+  outline: none;
+  border-color: #777;
+}
+
+.slider-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 20px;
+  padding-left: 20px;
+  border-left: 1px solid #444;
+}
+
+.slider-control input[type="range"] {
+  width: 150px;
+  cursor: pointer;
+}
+
+.slider-control input[type="range"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.slider-control span {
+  font-size: 14px;
+  color: #eee;
+  min-width: 40px;
+  font-family: monospace;
+}
+
+.slider-control .note {
+  font-size: 12px;
+  color: #888;
+  font-family: sans-serif;
+  font-style: italic;
+  min-width: auto;
 }
 
 canvas {
