@@ -16,21 +16,23 @@ html, body {
   width: 100vw;
   height: 100vh;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
+  gap: 20px;
   overflow: hidden;
+  padding: 20px;
 }
 
 .controls {
-  margin-bottom: 20px;
-  padding: 10px 20px;
+  padding: 20px;
   background: #222;
   border: 1px solid #444;
   border-radius: 4px;
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 250px;
 }
 
 .controls label {
@@ -40,19 +42,20 @@ html, body {
 
 .radio-group {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 10px;
 }
 
 .radio-group > label {
   font-size: 14px;
   color: #ccc;
-  margin-right: 5px;
+  margin-bottom: 5px;
 }
 
 .radio-options {
   display: flex;
-  gap: 15px;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .radio-label {
@@ -75,15 +78,17 @@ html, body {
 
 .slider-control {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: 20px;
-  padding-left: 20px;
-  border-left: 1px solid #444;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.slider-control label {
+  font-size: 14px;
+  color: #ccc;
 }
 
 .slider-control input[type="range"] {
-  width: 150px;
+  width: 100%;
   cursor: pointer;
 }
 
@@ -95,8 +100,54 @@ html, body {
 .slider-control span {
   font-size: 14px;
   color: #eee;
-  min-width: 40px;
   font-family: monospace;
+  text-align: center;
+}
+
+.action-button {
+  padding: 10px 16px;
+  background: #ff8844;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.action-button:hover {
+  background: #ff9955;
+}
+
+.action-button:active {
+  background: #ee7733;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+}
+
+.scale-button {
+  flex: 1;
+  padding: 10px 16px;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 4px;
+  color: #eee;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.scale-button:hover {
+  background: #444;
+}
+
+.scale-button:active {
+  background: #555;
 }
 
 canvas {

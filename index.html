@@ -8,6 +8,7 @@
 </head>
 <body>
   <div class="app">
+    <canvas id="view" width="900" height="700"></canvas>
     <div class="controls">
       <div class="radio-group">
         <label>フィールドタイプ:</label>
@@ -38,8 +39,32 @@
         <input type="range" id="logSumExpKSlider" min="0.01" max="1.5" step="0.01" value="0.5">
         <span id="logSumExpKValue">0.50</span>
       </div>
+      
+      <div class="slider-control">
+        <label for="contourLevelsSlider">等値線レベル数:</label>
+        <input type="range" id="contourLevelsSlider" min="1" max="20" step="1" value="10">
+        <span id="contourLevelsValue">10</span>
+      </div>
+      
+      <div class="slider-control">
+        <label for="contourStepSlider">等値線間隔:</label>
+        <input type="range" id="contourStepSlider" min="0.1" max="5.0" step="0.1" value="0.5">
+        <span id="contourStepValue">0.50</span>
+      </div>
+      
+      <div class="slider-control">
+        <label for="gridStepSlider">サンプリング間隔:</label>
+        <input type="range" id="gridStepSlider" min="1" max="10" step="1" value="4">
+        <span id="gridStepValue">4</span>
+      </div>
+      
+      <button id="randomizeButton" class="action-button">ガウシアンをランダム化</button>
+      
+      <div class="button-group">
+        <button id="scaleDownButton" class="scale-button">-10%</button>
+        <button id="scaleUpButton" class="scale-button">+10%</button>
+      </div>
     </div>
-    <canvas id="view" width="900" height="700"></canvas>
   </div>
 
   <script src="script.js"></script>

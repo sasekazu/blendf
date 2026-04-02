@@ -9,16 +9,18 @@ const height = canvas.height;
 // sx, sy: 標準偏差スケール
 // theta: 回転角 [rad]
 // amp: 振幅
-const gaussians = [
+let gaussians = [
   { x: 260, y: 250, sx: 80, sy: 45, theta: 0.35, amp: 1.0 },
   { x: 470, y: 360, sx: 70, sy: 110, theta: -0.5, amp: 0.95 },
   { x: 650, y: 240, sx: 95, sy: 55, theta: 0.9, amp: 0.85 },
 ];
 
 // 等値線レベル数
-const contourLevels = 10;
+let contourLevels = 10;
+// 等値線の間隔（固定間隔モード）
+let contourStep = 0.5;
 // サンプリング間隔（小さいほどきれい・重い）
-const gridStep = 4;
+let gridStep = 4;
 
 // フィールドタイプの選択
 let fieldType = 'gaussian'; // 'gaussian', 'ellipsoidSum', 'ellipsoidMin', 'ellipsoidLogSumExp'
@@ -59,7 +61,7 @@ function gaussianSumField(x, y, s = 1.0) {
     sum += gaussianValue(x, y, g);
   }
 
-  return sum - tau;
+  return - sum + tau;
 }
 
 // 楕円体の implicit 関数
@@ -173,17 +175,16 @@ function drawContours(grid) {
   // 背景に軽く濃淡も入れておく
   drawHeatmap(grid);
 
-  // 固定レベルの等高線を描画（0を中心に、負と正の両側に描画）
+  // 固定レベルの等高線を描画（0を中心に、固定間隔で負と正の両側に描画）
   const levels = [];
   if (contourLevels === 1) {
     // 1本だけなら0のレベルを描画（境界線）
     levels.push(0);
   } else {
-    // 複数本なら0を中心に等間隔で配置
-    const maxAbsValue = Math.max(Math.abs(minV), Math.abs(maxV));
-    const step = maxAbsValue / Math.ceil(contourLevels / 2);
-    for (let i = -Math.floor(contourLevels / 2); i <= Math.floor(contourLevels / 2); i++) {
-      levels.push(i * step);
+    // 複数本なら0を中心に固定間隔（contourStep）で配置
+    const halfLevels = Math.floor(contourLevels / 2);
+    for (let i = -halfLevels; i <= halfLevels; i++) {
+      levels.push(i * contourStep);
     }
   }
 
@@ -250,24 +251,13 @@ function drawHeatmap(grid) {
       const gy = Math.min(rows - 1, Math.floor(py / gridStep));
       const v = values[gy][gx];
       
-      // 0を中心としたdivergingカラーマップ: 負=青、0=白、正=赤
-      const absMax = Math.max(Math.abs(minV), Math.abs(maxV));
-      const normalized = v / Math.max(1e-12, absMax); // -1 ~ 1 の範囲に正規化
+      // グレースケール
+      const t = (v - minV) / Math.max(1e-12, maxV - minV);
+      const c = Math.floor(20 + 90 * t);
       
-      let r, g, b;
-      if (normalized < 0) {
-        // 負の値: 青から白へ
-        const t = Math.abs(normalized); // 0 (白) ~ 1 (青)
-        r = Math.floor(255 * (1 - t * 0.8)); // 255 -> 51
-        g = Math.floor(255 * (1 - t * 0.8)); // 255 -> 51
-        b = 255; // 常に青成分は最大
-      } else {
-        // 正の値: 白から赤へ
-        const t = normalized; // 0 (白) ~ 1 (赤)
-        r = 255; // 常に赤成分は最大
-        g = Math.floor(255 * (1 - t * 0.8)); // 255 -> 51
-        b = Math.floor(255 * (1 - t * 0.8)); // 255 -> 51
-      }
+      const r = c;
+      const g = c;
+      const b = c;
 
       const idx = (py * width + px) * 4;
       data[idx + 0] = r;
@@ -410,6 +400,69 @@ ellipsoidSSlider.addEventListener('input', (e) => {
 logSumExpKSlider.addEventListener('input', (e) => {
   logSumExpK = parseFloat(e.target.value);
   logSumExpKValue.textContent = logSumExpK.toFixed(2);
+  render();
+});
+
+// 等値線レベル数の調整
+const contourLevelsSlider = document.getElementById('contourLevelsSlider');
+const contourLevelsValue = document.getElementById('contourLevelsValue');
+contourLevelsSlider.addEventListener('input', (e) => {
+  contourLevels = parseInt(e.target.value);
+  contourLevelsValue.textContent = contourLevels;
+  render();
+});
+
+// 等値線間隔の調整
+const contourStepSlider = document.getElementById('contourStepSlider');
+const contourStepValue = document.getElementById('contourStepValue');
+contourStepSlider.addEventListener('input', (e) => {
+  contourStep = parseFloat(e.target.value);
+  contourStepValue.textContent = contourStep.toFixed(2);
+  render();
+});
+
+// サンプリング間隔の調整
+const gridStepSlider = document.getElementById('gridStepSlider');
+const gridStepValue = document.getElementById('gridStepValue');
+gridStepSlider.addEventListener('input', (e) => {
+  gridStep = parseInt(e.target.value);
+  gridStepValue.textContent = gridStep;
+  render();
+});
+
+// ガウシアンをランダム化
+const randomizeButton = document.getElementById('randomizeButton');
+randomizeButton.addEventListener('click', () => {
+  gaussians = gaussians.map(() => ({
+    x: width * 0.2 + Math.random() * width * 0.6,  // 中心6割の範囲
+    y: height * 0.2 + Math.random() * height * 0.6,  // 中心6割の範囲
+    sx: 40 + Math.random() * 80,  // 40-120
+    sy: 40 + Math.random() * 80,  // 40-120
+    theta: (Math.random() - 0.5) * Math.PI,  // -π/2 to π/2
+    amp: 0.8 + Math.random() * 0.4  // 0.8-1.2
+  }));
+  render();
+});
+
+// スケールを拡大（+10%）
+const scaleUpButton = document.getElementById('scaleUpButton');
+scaleUpButton.addEventListener('click', () => {
+  gaussians = gaussians.map(g => ({
+    ...g,
+    sx: g.sx * 1.1,
+    sy: g.sy * 1.1
+  }));
+  render();
+});
+
+// スケールを縮小（-10%）
+const scaleDownButton = document.getElementById('scaleDownButton');
+scaleDownButton.addEventListener('click', () => {
+  gaussians = gaussians.map(g => ({
+    ...g,
+    sx: g.sx * 0.9,
+    sy: g.sy * 0.9
+  }));
   render();
 });
 
