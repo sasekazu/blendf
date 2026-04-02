@@ -1,0 +1,247 @@
+const canvas = document.getElementById('view');
+const ctx = canvas.getContext('2d');
+
+const width = canvas.width;
+const height = canvas.height;
+
+// まずは単純な 2D 異方性ガウシアンを 3 個だけ固定配置
+// x, y: 中心
+// sx, sy: 標準偏差スケール
+// theta: 回転角 [rad]
+// amp: 振幅
+const gaussians = [
+  { x: 260, y: 250, sx: 80, sy: 45, theta: 0.35, amp: 1.0 },
+  { x: 470, y: 360, sx: 70, sy: 110, theta: -0.5, amp: 0.95 },
+  { x: 650, y: 240, sx: 95, sy: 55, theta: 0.9, amp: 0.85 },
+];
+
+// 等値線レベル数
+const contourLevels = 10;
+// サンプリング間隔（小さいほどきれい・重い）
+const gridStep = 4;
+
+// ドラッグ操作用の変数
+let draggedGaussian = null;
+let isDragging = false;
+
+function gaussian2D(x, y, g) {
+  const dx = x - g.x;
+  const dy = y - g.y;
+
+  const c = Math.cos(g.theta);
+  const s = Math.sin(g.theta);
+
+  // 回転してローカル座標へ
+  const lx =  c * dx + s * dy;
+  const ly = -s * dx + c * dy;
+
+  const q = (lx * lx) / (g.sx * g.sx) + (ly * ly) / (g.sy * g.sy);
+  return g.amp * Math.exp(-0.5 * q);
+}
+
+function fieldValue(x, y) {
+  let sum = 0;
+  for (const g of gaussians) {
+    sum += gaussian2D(x, y, g);
+  }
+  return sum;
+}
+
+function computeFieldGrid() {
+  const cols = Math.floor(width / gridStep) + 1;
+  const rows = Math.floor(height / gridStep) + 1;
+  const values = new Array(rows);
+
+  let minV = Infinity;
+  let maxV = -Infinity;
+
+  for (let j = 0; j < rows; j++) {
+    values[j] = new Array(cols);
+    for (let i = 0; i < cols; i++) {
+      const x = i * gridStep;
+      const y = j * gridStep;
+      const v = fieldValue(x, y);
+      values[j][i] = v;
+      if (v < minV) minV = v;
+      if (v > maxV) maxV = v;
+    }
+  }
+
+  return { values, cols, rows, minV, maxV };
+}
+
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function interpPoint(x1, y1, v1, x2, y2, v2, iso) {
+  const denom = (v2 - v1);
+  const t = Math.abs(denom) < 1e-12 ? 0.5 : (iso - v1) / denom;
+  return {
+    x: lerp(x1, x2, t),
+    y: lerp(y1, y2, t),
+  };
+}
+
+// marching squares の簡易実装
+function drawContours(grid) {
+  const { values, cols, rows, minV, maxV } = grid;
+
+  // 背景に軽く濃淡も入れておく
+  drawHeatmap(grid);
+
+  for (let levelIdx = 1; levelIdx <= contourLevels; levelIdx++) {
+    const iso = lerp(minV, maxV, levelIdx / (contourLevels + 1));
+
+    ctx.beginPath();
+    ctx.lineWidth = 1.2;
+    const tone = Math.floor(220 * (levelIdx / contourLevels));
+    ctx.strokeStyle = `rgb(${tone}, ${tone}, ${tone})`;
+
+    for (let j = 0; j < rows - 1; j++) {
+      for (let i = 0; i < cols - 1; i++) {
+        const x = i * gridStep;
+        const y = j * gridStep;
+
+        const v0 = values[j][i];
+        const v1 = values[j][i + 1];
+        const v2 = values[j + 1][i + 1];
+        const v3 = values[j + 1][i];
+
+        const p0 = { x: x, y: y };
+        const p1 = { x: x + gridStep, y: y };
+        const p2 = { x: x + gridStep, y: y + gridStep };
+        const p3 = { x: x, y: y + gridStep };
+
+        const pts = [];
+
+        if ((v0 < iso) !== (v1 < iso)) pts.push(interpPoint(p0.x, p0.y, v0, p1.x, p1.y, v1, iso));
+        if ((v1 < iso) !== (v2 < iso)) pts.push(interpPoint(p1.x, p1.y, v1, p2.x, p2.y, v2, iso));
+        if ((v2 < iso) !== (v3 < iso)) pts.push(interpPoint(p2.x, p2.y, v2, p3.x, p3.y, v3, iso));
+        if ((v3 < iso) !== (v0 < iso)) pts.push(interpPoint(p3.x, p3.y, v3, p0.x, p0.y, v0, iso));
+
+        if (pts.length === 2) {
+          ctx.moveTo(pts[0].x, pts[0].y);
+          ctx.lineTo(pts[1].x, pts[1].y);
+        } else if (pts.length === 4) {
+          ctx.moveTo(pts[0].x, pts[0].y);
+          ctx.lineTo(pts[1].x, pts[1].y);
+          ctx.moveTo(pts[2].x, pts[2].y);
+          ctx.lineTo(pts[3].x, pts[3].y);
+        }
+      }
+    }
+
+    ctx.stroke();
+  }
+}
+
+function drawHeatmap(grid) {
+  const { values, cols, rows, minV, maxV } = grid;
+  const image = ctx.createImageData(width, height);
+  const data = image.data;
+
+  for (let py = 0; py < height; py++) {
+    for (let px = 0; px < width; px++) {
+      const gx = Math.min(cols - 1, Math.floor(px / gridStep));
+      const gy = Math.min(rows - 1, Math.floor(py / gridStep));
+      const v = values[gy][gx];
+      const t = (v - minV) / Math.max(1e-12, maxV - minV);
+      const c = Math.floor(20 + 90 * t);
+
+      const idx = (py * width + px) * 4;
+      data[idx + 0] = c;
+      data[idx + 1] = c;
+      data[idx + 2] = c;
+      data[idx + 3] = 255;
+    }
+  }
+
+  ctx.putImageData(image, 0, 0);
+}
+
+function drawGaussianCenters() {
+  for (const g of gaussians) {
+    ctx.beginPath();
+    ctx.arc(g.x, g.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff8844';
+    ctx.fill();
+  }
+}
+
+function render() {
+  ctx.clearRect(0, 0, width, height);
+  const grid = computeFieldGrid();
+  drawContours(grid);
+  drawGaussianCenters();
+}
+
+// マウス座標を取得（キャンバス相対）
+function getMousePos(e) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top,
+  };
+}
+
+// マウス位置に近いガウシアンを探す
+function findGaussianAt(mx, my) {
+  const threshold = 15; // クリック判定の距離（ピクセル）
+  for (const g of gaussians) {
+    const dx = mx - g.x;
+    const dy = my - g.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < threshold) {
+      return g;
+    }
+  }
+  return null;
+}
+
+// マウスダウン時
+canvas.addEventListener('mousedown', (e) => {
+  const pos = getMousePos(e);
+  const g = findGaussianAt(pos.x, pos.y);
+  if (g) {
+    draggedGaussian = g;
+    isDragging = true;
+    canvas.style.cursor = 'grabbing';
+  }
+});
+
+// マウスムーブ時
+canvas.addEventListener('mousemove', (e) => {
+  const pos = getMousePos(e);
+  
+  if (isDragging && draggedGaussian) {
+    // ドラッグ中：ガウシアンの位置を更新
+    draggedGaussian.x = pos.x;
+    draggedGaussian.y = pos.y;
+    render();
+  } else {
+    // ホバー時：カーソルを変更
+    const g = findGaussianAt(pos.x, pos.y);
+    canvas.style.cursor = g ? 'grab' : 'default';
+  }
+});
+
+// マウスアップ時
+canvas.addEventListener('mouseup', () => {
+  if (isDragging) {
+    isDragging = false;
+    draggedGaussian = null;
+    canvas.style.cursor = 'default';
+  }
+});
+
+// キャンバス外でマウスアップした場合
+canvas.addEventListener('mouseleave', () => {
+  if (isDragging) {
+    isDragging = false;
+    draggedGaussian = null;
+    canvas.style.cursor = 'default';
+  }
+});
+
+render();
