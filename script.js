@@ -24,7 +24,7 @@ let gridStep = 4;
 // 表示制御
 let showIndividualContours = false;  // 個別の等高線
 let showCombinedContours = true;    // 合成場の等高線
-let showHeatmap = false;            // 合成場の色描画
+let showHeatmap = true;             // 合成場の色描画
 
 // フィールドタイプの選択
 let fieldType = 'gaussian'; // 'gaussian', 'ellipsoidSum', 'ellipsoidMin', 'ellipsoidLogSumExp'
@@ -328,15 +328,30 @@ function drawHeatmap(grid) {
   const image = ctx.createImageData(width, height);
   const data = image.data;
 
+  // フィールドタイプに応じてクリッピング範囲を調整
+  let clampMin, clampMax;
+  if (fieldType === 'gaussian') {
+    // Gaussianは実際の値の範囲を使用
+    clampMin = minV;
+    clampMax = maxV;
+  } else {
+    // Ellipsoidは固定範囲でクリッピング
+    clampMin = -5;
+    clampMax = 5;
+  }
+
   for (let py = 0; py < height; py++) {
     for (let px = 0; px < width; px++) {
       const gx = Math.min(cols - 1, Math.floor(px / gridStep));
       const gy = Math.min(rows - 1, Math.floor(py / gridStep));
       const v = values[gy][gx];
       
-      // グレースケール
-      const t = (v - minV) / Math.max(1e-12, maxV - minV);
-      const c = Math.floor(20 + 90 * t);
+      // 値をクリッピングしてから正規化
+      const clampedV = Math.max(clampMin, Math.min(clampMax, v));
+      const t = (clampedV - clampMin) / Math.max(1e-12, clampMax - clampMin);
+      
+      // グレースケール（反転：値が大きいほど暗く）
+      const c = Math.floor(110 - 90 * t);
       
       const r = c;
       const g = c;
@@ -605,5 +620,21 @@ if (gaussianRadio) {
   fieldType = 'gaussian';
 }
 updateSliderState();
+
+// スライダーの初期値を明示的に設定
+ellipsoidSSlider.value = ellipsoidS;
+ellipsoidSValue.textContent = ellipsoidS.toFixed(2);
+
+logSumExpKSlider.value = logSumExpK;
+logSumExpKValue.textContent = logSumExpK.toFixed(2);
+
+contourLevelsSlider.value = contourLevels;
+contourLevelsValue.textContent = contourLevels;
+
+contourStepSlider.value = contourStep;
+contourStepValue.textContent = contourStep.toFixed(2);
+
+gridStepSlider.value = gridStep;
+gridStepValue.textContent = gridStep;
 
 render();
