@@ -1,20 +1,34 @@
 // ============ FIELD MATH FUNCTIONS ============
 // Mathematical functions for Gaussian and Ellipsoid implicit fields
 
+// ガウシアンの実座標と実サイズを取得（main.jsから参照）
+function getActualGaussian(g) {
+  const baseSize = Math.min(width, height);
+  return {
+    x: g.x * width,
+    y: g.y * height,
+    sx: g.sx * baseSize,
+    sy: g.sy * baseSize,
+    theta: g.theta,
+    amp: g.amp
+  };
+}
+
 // 個別のGaussian値を計算
 function gaussianValue(x, y, g) {
-  const dx = x - g.x;
-  const dy = y - g.y;
+  const actual = getActualGaussian(g);
+  const dx = x - actual.x;
+  const dy = y - actual.y;
 
-  const c = Math.cos(g.theta);
-  const s = Math.sin(g.theta);
+  const c = Math.cos(actual.theta);
+  const s = Math.sin(actual.theta);
 
   // 回転してローカル座標へ
   const lx =  c * dx + s * dy;
   const ly = -s * dx + c * dy;
 
-  const q = (lx * lx) / (g.sx * g.sx) + (ly * ly) / (g.sy * g.sy);
-  return g.amp * Math.exp(-0.5 * q);
+  const q = (lx * lx) / (actual.sx * actual.sx) + (ly * ly) / (actual.sy * actual.sy);
+  return actual.amp * Math.exp(-0.5 * q);
 }
 
 // sから対応するτを計算（同じMahalanobis半径sに対応する等値面）
@@ -36,17 +50,18 @@ function gaussianSumField(x, y, s = 1.0) {
 
 // 楕円体の implicit 関数
 function ellipsoidValue(x, y, g, s = 1.0) {
-  const dx = x - g.x;
-  const dy = y - g.y;
-  const c = Math.cos(g.theta);
-  const sn = Math.sin(g.theta);
+  const actual = getActualGaussian(g);
+  const dx = x - actual.x;
+  const dy = y - actual.y;
+  const c = Math.cos(actual.theta);
+  const sn = Math.sin(actual.theta);
 
   // world -> local
   const lx =  c * dx + sn * dy;
   const ly = -sn * dx + c * dy;
 
   // v_i(x) = d^T Sigma^{-1} d - s^2
-  return (lx * lx) / (g.sx * g.sx) + (ly * ly) / (g.sy * g.sy) - s * s;
+  return (lx * lx) / (actual.sx * actual.sx) + (ly * ly) / (actual.sy * actual.sy) - s * s;
 }
 
 // 楕円体関数の単純和

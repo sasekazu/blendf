@@ -24,6 +24,12 @@ html, body {
   padding: 20px;
 }
 
+#view {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 .controls {
   padding: 20px;
   background: #222;
@@ -204,8 +210,9 @@ html, body {
   
   #view {
     width: 100vw !important;
-    height: 60vh !important;
+    height: 65vh !important;
     max-width: 100vw;
+    display: block;
   }
   
   .controls {
@@ -225,7 +232,7 @@ html, body {
   }
   
   .controls.expanded {
-    max-height: 70vh;
+    max-height: 65vh;
     padding: 20px;
   }
   
@@ -246,7 +253,7 @@ html, body {
   }
   
   #view {
-    height: 55vh !important;
+    height: 60vh !important;
   }
   
   .controls {
@@ -254,7 +261,7 @@ html, body {
   }
   
   .controls.expanded {
-    max-height: 75vh;
+    max-height: 70vh;
     padding: 15px;
   }
   

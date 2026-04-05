@@ -7,15 +7,38 @@ let width = canvas.width;
 let height = canvas.height;
 
 // ガウシアン/楕円のデータ
-// x, y: 中心
-// sx, sy: 標準偏差スケール
+// x, y: 中心（相対座標0-1として保存し、実座標に変換して使用）
+// sx, sy: 標準偏差スケール（基準サイズに対する比率）
 // theta: 回転角 [rad]
 // amp: 振幅
 let gaussians = [
-  { x: 260, y: 250, sx: 80, sy: 45, theta: 0.35, amp: 1.0 },
-  { x: 470, y: 360, sx: 70, sy: 110, theta: -0.5, amp: 0.95 },
-  { x: 650, y: 240, sx: 95, sy: 55, theta: 0.9, amp: 0.85 },
+  { x: 0.289, y: 0.357, sx: 0.089, sy: 0.064, theta: 0.35, amp: 1.0 },
+  { x: 0.522, y: 0.514, sx: 0.078, sy: 0.157, theta: -0.5, amp: 0.95 },
+  { x: 0.722, y: 0.343, sx: 0.106, sy: 0.079, theta: 0.9, amp: 0.85 },
 ];
+
+// ガウシアンの相対座標を実座標に変換
+function getActualPos(g) {
+  return {
+    x: g.x * width,
+    y: g.y * height
+  };
+}
+
+// ガウシアンの相対サイズを実サイズに変換
+function getActualSize(g) {
+  const baseSize = Math.min(width, height);
+  return {
+    sx: g.sx * baseSize,
+    sy: g.sy * baseSize
+  };
+}
+
+// 実座標を相対座標に変換して保存
+function setActualPos(g, actualX, actualY) {
+  g.x = actualX / width;
+  g.y = actualY / height;
+}
 
 // パラメータ
 let contourLevels = 1;
@@ -53,8 +76,9 @@ function getMousePos(e) {
 function findGaussianAt(mx, my) {
   const threshold = 15;
   for (const g of gaussians) {
-    const dx = mx - g.x;
-    const dy = my - g.y;
+    const pos = getActualPos(g);
+    const dx = mx - pos.x;
+    const dy = my - pos.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
     if (dist < threshold) {
       return g;
@@ -77,8 +101,7 @@ canvas.addEventListener('mousemove', (e) => {
   const pos = getMousePos(e);
   
   if (isDragging && draggedGaussian) {
-    draggedGaussian.x = pos.x;
-    draggedGaussian.y = pos.y;
+    setActualPos(draggedGaussian, pos.x, pos.y);
     render();
   } else {
     const g = findGaussianAt(pos.x, pos.y);
@@ -128,8 +151,7 @@ canvas.addEventListener('touchmove', (e) => {
   e.preventDefault();
   if (isDragging && draggedGaussian) {
     const pos = getTouchPos(e);
-    draggedGaussian.x = pos.x;
-    draggedGaussian.y = pos.y;
+    setActualPos(draggedGaussian, pos.x, pos.y);
     render();
   }
 });
@@ -306,11 +328,12 @@ showIndividualCheckbox.addEventListener('change', (e) => {
 // ガウシアンをランダム化
 const randomizeButton = document.getElementById('randomizeButton');
 randomizeButton.addEventListener('click', () => {
+  const baseSize = Math.min(width, height);
   gaussians = gaussians.map(() => ({
-    x: width * 0.2 + Math.random() * width * 0.6,
-    y: height * 0.2 + Math.random() * height * 0.6,
-    sx: 40 + Math.random() * 80,
-    sy: 40 + Math.random() * 80,
+    x: 0.2 + Math.random() * 0.6,
+    y: 0.2 + Math.random() * 0.6,
+    sx: (40 + Math.random() * 80) / baseSize,
+    sy: (40 + Math.random() * 80) / baseSize,
     theta: (Math.random() - 0.5) * Math.PI,
     amp: 0.8 + Math.random() * 0.4
   }));
@@ -320,22 +343,20 @@ randomizeButton.addEventListener('click', () => {
 // スケールを拡大（+10%）
 const scaleUpButton = document.getElementById('scaleUpButton');
 scaleUpButton.addEventListener('click', () => {
-  gaussians = gaussians.map(g => ({
-    ...g,
-    sx: g.sx * 1.1,
-    sy: g.sy * 1.1
-  }));
+  gaussians.forEach(g => {
+    g.sx *= 1.1;
+    g.sy *= 1.1;
+  });
   render();
 });
 
 // スケールを縮小（-10%）
 const scaleDownButton = document.getElementById('scaleDownButton');
 scaleDownButton.addEventListener('click', () => {
-  gaussians = gaussians.map(g => ({
-    ...g,
-    sx: g.sx * 0.9,
-    sy: g.sy * 0.9
-  }));
+  gaussians.forEach(g => {
+    g.sx *= 0.9;
+    g.sy *= 0.9;
+  });
   render();
 });
 
@@ -380,11 +401,18 @@ if (toggleControlsButton && controlsPanel) {
 
 function resizeCanvas() {
   const isMobile = window.innerWidth <= 768;
+  const isSmallMobile = window.innerWidth <= 480;
   
   if (isMobile) {
-    // モバイル: 画面幅いっぱい、高さは60vh
+    // モバイル: 画面幅いっぱい
     canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight * 0.6;
+    if (isSmallMobile) {
+      // 小さい画面: 60vh
+      canvas.height = window.innerHeight * 0.6;
+    } else {
+      // タブレット: 65vh
+      canvas.height = window.innerHeight * 0.65;
+    }
   } else {
     // デスクトップ: 固定サイズ
     canvas.width = 900;
