@@ -175,8 +175,9 @@ function drawHeatmap(grid) {
 // ガウシアンの中心点を描画
 function drawGaussianCenters() {
   for (const g of gaussians) {
+    const pos = getActualPos(g);
     ctx.beginPath();
-    ctx.arc(g.x, g.y, 4, 0, Math.PI * 2);
+    ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
     ctx.fillStyle = '#ff8844';
     ctx.fill();
   }
