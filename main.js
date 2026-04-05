@@ -3,8 +3,8 @@
 const canvas = document.getElementById('view');
 const ctx = canvas.getContext('2d');
 
-const width = canvas.width;
-const height = canvas.height;
+let width = canvas.width;
+let height = canvas.height;
 
 // ガウシアン/楕円のデータ
 // x, y: 中心
@@ -99,6 +99,54 @@ canvas.addEventListener('mouseleave', () => {
     isDragging = false;
     draggedGaussian = null;
     canvas.style.cursor = 'default';
+  }
+});
+
+
+// ============ TOUCH INTERACTION ============
+
+function getTouchPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0] || e.changedTouches[0];
+  return {
+    x: touch.clientX - rect.left,
+    y: touch.clientY - rect.top,
+  };
+}
+
+canvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const pos = getTouchPos(e);
+  const g = findGaussianAt(pos.x, pos.y);
+  if (g) {
+    draggedGaussian = g;
+    isDragging = true;
+  }
+});
+
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  if (isDragging && draggedGaussian) {
+    const pos = getTouchPos(e);
+    draggedGaussian.x = pos.x;
+    draggedGaussian.y = pos.y;
+    render();
+  }
+});
+
+canvas.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  if (isDragging) {
+    isDragging = false;
+    draggedGaussian = null;
+  }
+});
+
+canvas.addEventListener('touchcancel', (e) => {
+  e.preventDefault();
+  if (isDragging) {
+    isDragging = false;
+    draggedGaussian = null;
   }
 });
 
@@ -292,6 +340,72 @@ scaleDownButton.addEventListener('click', () => {
 });
 
 
+// ============ MOBILE CONTROLS TOGGLE ============
+
+const toggleControlsButton = document.getElementById('toggleControlsButton');
+const controlsPanel = document.getElementById('controls');
+
+if (toggleControlsButton && controlsPanel) {
+  toggleControlsButton.addEventListener('click', () => {
+    const isExpanded = controlsPanel.classList.contains('expanded');
+    
+    if (isExpanded) {
+      controlsPanel.classList.remove('expanded');
+      toggleControlsButton.classList.remove('hidden');
+      toggleControlsButton.textContent = '⚙️ Settings';
+    } else {
+      controlsPanel.classList.add('expanded');
+      toggleControlsButton.textContent = '✕ Close';
+    }
+  });
+  
+  // コントロールパネル外をタップで閉じる（モバイルのみ）
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 768) {
+      const isControlsClick = controlsPanel.contains(e.target);
+      const isButtonClick = toggleControlsButton.contains(e.target);
+      const isExpanded = controlsPanel.classList.contains('expanded');
+      
+      if (isExpanded && !isControlsClick && !isButtonClick) {
+        controlsPanel.classList.remove('expanded');
+        toggleControlsButton.classList.remove('hidden');
+        toggleControlsButton.textContent = '⚙️ Settings';
+      }
+    }
+  });
+}
+
+
+// ============ RESPONSIVE CANVAS ============
+
+function resizeCanvas() {
+  const isMobile = window.innerWidth <= 768;
+  
+  if (isMobile) {
+    // モバイル: 画面幅いっぱい、高さは60vh
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight * 0.6;
+  } else {
+    // デスクトップ: 固定サイズ
+    canvas.width = 900;
+    canvas.height = 700;
+  }
+  
+  // グローバル変数を更新
+  width = canvas.width;
+  height = canvas.height;
+  
+  render();
+}
+
+// ウィンドウリサイズ時にキャンバスをリサイズ
+let resizeTimeout;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(resizeCanvas, 250);
+});
+
+
 // ============ INITIALIZATION ============
 
 // ページロード時に明示的にガウシアンを選択（ブラウザの自動復元を上書き）
@@ -302,6 +416,9 @@ if (gaussianRadio) {
 }
 
 updateSliderState();
+
+// 初期キャンバスサイズを設定
+resizeCanvas();
 
 // スライダーの初期値を明示的に設定
 ellipsoidSSlider.value = ellipsoidS;

@@ -98,6 +98,180 @@ html, body {
   cursor: pointer;
 }
 
+.checkbox-control {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #ccc;
+}
+
+.checkbox-label:hover {
+  color: #fff;
+}
+
+.checkbox-label input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: #ff8844;
+}
+
+.action-button {
+  padding: 10px 16px;
+  background: #ff8844;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.action-button:hover {
+  background: #ff6622;
+}
+
+.action-button:active {
+  background: #ee5511;
+}
+
+.button-group {
+  display: flex;
+  gap: 8px;
+}
+
+.scale-button {
+  flex: 1;
+  padding: 8px 12px;
+  background: #444;
+  color: #ccc;
+  border: 1px solid #666;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.scale-button:hover {
+  background: #555;
+  color: #fff;
+}
+
+.scale-button:active {
+  background: #333;
+}
+
+.toggle-controls-button {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  background: #ff8844;
+  color: #fff;
+  border: none;
+  border-radius: 24px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  transition: all 0.3s;
+}
+
+.toggle-controls-button:hover {
+  background: #ff6622;
+  transform: scale(1.05);
+}
+
+.toggle-controls-button:active {
+  transform: scale(0.95);
+}
+
+/* レスポンシブデザイン: タブレット以下 */
+@media (max-width: 768px) {
+  .app {
+    flex-direction: column;
+    padding: 0;
+    gap: 0;
+  }
+  
+  #view {
+    width: 100vw !important;
+    height: 60vh !important;
+    max-width: 100vw;
+  }
+  
+  .controls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 0;
+    min-width: auto;
+    padding: 0 20px;
+    overflow-y: auto;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.4);
+    z-index: 999;
+  }
+  
+  .controls.expanded {
+    max-height: 70vh;
+    padding: 20px;
+  }
+  
+  .toggle-controls-button {
+    display: block;
+  }
+  
+  .toggle-controls-button.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* レスポンシブデザイン: スマートフォン */
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
+  
+  #view {
+    height: 55vh !important;
+  }
+  
+  .controls {
+    padding: 0 15px;
+  }
+  
+  .controls.expanded {
+    max-height: 75vh;
+    padding: 15px;
+  }
+  
+  .radio-label span,
+  .checkbox-label span,
+  .slider-control label {
+    font-size: 13px;
+  }
+  
+  .toggle-controls-button {
+    bottom: 15px;
+    right: 15px;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+}
+
 .slider-control input[type="range"]:disabled {
   cursor: not-allowed;
   opacity: 0.5;
