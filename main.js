@@ -61,6 +61,7 @@ let ricciT = 0.3;
 // ドラッグ操作用
 let draggedGaussian = null;
 let isDragging = false;
+let hoveredGaussian = null;
 
 
 // ============ MOUSE INTERACTION ============
@@ -74,7 +75,10 @@ function getMousePos(e) {
 }
 
 function findGaussianAt(mx, my) {
-  const threshold = 15;
+  // モバイルではタップ領域を大きく（44px）、デスクトップでは小さく（20px）
+  const isMobile = window.innerWidth <= 768;
+  const threshold = isMobile ? 44 : 20;
+  
   for (const g of gaussians) {
     const pos = getActualPos(g);
     const dx = mx - pos.x;
@@ -105,6 +109,14 @@ canvas.addEventListener('mousemove', (e) => {
     render();
   } else {
     const g = findGaussianAt(pos.x, pos.y);
+    const wasHovered = hoveredGaussian !== null;
+    const isHovered = g !== null;
+    
+    if (wasHovered !== isHovered || hoveredGaussian !== g) {
+      hoveredGaussian = g;
+      render();
+    }
+    
     canvas.style.cursor = g ? 'grab' : 'default';
   }
 });
@@ -114,6 +126,7 @@ canvas.addEventListener('mouseup', () => {
     isDragging = false;
     draggedGaussian = null;
     canvas.style.cursor = 'default';
+    render();
   }
 });
 
@@ -123,6 +136,8 @@ canvas.addEventListener('mouseleave', () => {
     draggedGaussian = null;
     canvas.style.cursor = 'default';
   }
+  hoveredGaussian = null;
+  render();
 });
 
 
@@ -144,6 +159,7 @@ canvas.addEventListener('touchstart', (e) => {
   if (g) {
     draggedGaussian = g;
     isDragging = true;
+    render();
   }
 });
 
@@ -161,6 +177,7 @@ canvas.addEventListener('touchend', (e) => {
   if (isDragging) {
     isDragging = false;
     draggedGaussian = null;
+    render();
   }
 });
 
@@ -169,6 +186,7 @@ canvas.addEventListener('touchcancel', (e) => {
   if (isDragging) {
     isDragging = false;
     draggedGaussian = null;
+    render();
   }
 });
 

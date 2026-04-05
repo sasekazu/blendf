@@ -174,11 +174,40 @@ function drawHeatmap(grid) {
 
 // ガウシアンの中心点を描画
 function drawGaussianCenters() {
+  const isMobile = window.innerWidth <= 768;
+  const baseRadius = isMobile ? 8 : 6;
+  
   for (const g of gaussians) {
     const pos = getActualPos(g);
+    const isDragged = g === draggedGaussian;
+    const isHovered = g === hoveredGaussian;
+    
+    // ガウシアンの中心点（大きめに）
     ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = '#ff8844';
+    ctx.arc(pos.x, pos.y, baseRadius, 0, Math.PI * 2);
+    
+    // 状態によって色を変える
+    if (isDragged) {
+      ctx.fillStyle = '#ffaa66';
+      ctx.strokeStyle = '#ff6622';
+      ctx.lineWidth = 3;
+    } else if (isHovered) {
+      ctx.fillStyle = '#ff9955';
+      ctx.strokeStyle = '#ff8844';
+      ctx.lineWidth = 2;
+    } else {
+      ctx.fillStyle = '#ff8844';
+      ctx.strokeStyle = '#cc6633';
+      ctx.lineWidth = 1;
+    }
+    
+    ctx.fill();
+    ctx.stroke();
+    
+    // 内側の白い点でより目立たせる
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, baseRadius * 0.4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
     ctx.fill();
   }
 }
