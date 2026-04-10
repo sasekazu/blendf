@@ -18,25 +18,22 @@ function interpPoint(x1, y1, v1, x2, y2, v2, iso) {
 
 // 合成場の等高線を描画
 function drawCombinedContours(grid) {
-  const { values, cols, rows, minV, maxV } = grid;
-
-  // 固定レベルの等高線を描画（0を中心に、固定間隔で負と正の両側に描画）
+  // tauを中心に固定間隔で等高線を配置
+  const tau = gaussianDirectTau;
   const levels = [];
   if (contourLevels === 1) {
-    // 1本だけなら0のレベルを描画（境界線）
-    levels.push(0);
+    levels.push(tau);
   } else {
-    // 複数本なら0を中心に固定間隔（contourStep）で配置
     const halfLevels = Math.floor(contourLevels / 2);
     for (let i = -halfLevels; i <= halfLevels; i++) {
-      levels.push(i * contourStep);
+      levels.push(tau + i * contourStep);
     }
   }
 
-  drawContoursAtLevels(grid, levels, false, '#ffff00', '#ffffff');
+  drawContoursAtLevels(grid, levels, false, tau, '#ffff00', '#ffffff');
 }
 
-// 個別の等高線を描画
+// 個別の等高線を描画（常にiso=0: 個別フィールドのゼロ等値面）
 function drawIndividualContours() {
   const individualColors = [
     'rgba(100, 150, 255, 0.6)',  // 青系
@@ -44,26 +41,18 @@ function drawIndividualContours() {
     'rgba(255, 100, 150, 0.6)',  // ピンク系
   ];
 
-  // 合成後と同じレベルを使用
-  const levels = [];
-  if (contourLevels === 1) {
-    levels.push(0);
-  } else {
-    const halfLevels = Math.floor(contourLevels / 2);
-    for (let i = -halfLevels; i <= halfLevels; i++) {
-      levels.push(i * contourStep);
-    }
-  }
+  // 個別楕円はS_i(x)=0（tauと無関係）
+  const levels = [0];
 
   for (let gIdx = 0; gIdx < gaussians.length; gIdx++) {
     const grid = computeSingleFieldGrid(gIdx);
     const color = individualColors[gIdx % individualColors.length];
-    drawContoursAtLevels(grid, levels, true, color, color);
+    drawContoursAtLevels(grid, levels, true, 0, color, color);
   }
 }
 
 // 指定されたレベルで等高線を描画（実線または破線）
-function drawContoursAtLevels(grid, levels, dashed, zeroColor, otherColor) {
+function drawContoursAtLevels(grid, levels, dashed, highlightLevel, zeroColor, otherColor) {
   const { values, cols, rows } = grid;
 
   for (let levelIdx = 0; levelIdx < levels.length; levelIdx++) {
@@ -77,10 +66,10 @@ function drawContoursAtLevels(grid, levels, dashed, zeroColor, otherColor) {
       ctx.strokeStyle = zeroColor;  // 個別の場合は全て同じ色
     } else {
       ctx.setLineDash([]);
-      ctx.lineWidth = iso === 0 ? 2.5 : 1.2;
+      ctx.lineWidth = iso === highlightLevel ? 2.5 : 1.2;
       
-      // 0のレベルは黄色で強調、それ以外は白系
-      if (iso === 0) {
+      // highlightLevelは黄色で強調、それ以外は白系
+      if (iso === highlightLevel) {
         ctx.strokeStyle = zeroColor;
       } else {
         const tone = Math.floor(180 + 40 * (levelIdx / levels.length));
@@ -154,8 +143,9 @@ function drawHeatmap(grid) {
       const clampedV = Math.max(clampMin, Math.min(clampMax, v));
       const t = (clampedV - clampMin) / Math.max(1e-12, clampMax - clampMin);
       
-      // グレースケール（反転：値が大きいほど暗く）
-      const c = Math.floor(110 - 90 * t);
+      // グレースケール：Gaussianは値が大きいほど明るく、LogSumExpは逆（内側が負）
+      const tDisplay = fieldType === 'ellipsoidLogSumExp' ? 1 - t : t;
+      const c = Math.floor(20 + 90 * tDisplay);
       
       const r = c;
       const g = c;
