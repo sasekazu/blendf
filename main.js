@@ -339,7 +339,7 @@ showIndividualCheckbox.addEventListener('change', (e) => {
   render();
 });
 // ガウシアン個数スライダー
-let gaussianCount = 50;
+let gaussianCount = 3;
 const gaussianCountSlider = document.getElementById('gaussianCountSlider');
 const gaussianCountValue = document.getElementById('gaussianCountValue');
 gaussianCountSlider.addEventListener('input', (e) => {
