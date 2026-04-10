@@ -303,7 +303,16 @@ showIndividualCheckbox.addEventListener('change', (e) => {
   showIndividualContours = e.target.checked;
   render();
 });
-
+// ガウシアン個数スライダー
+let gaussianCount = 50;
+const gaussianCountSlider = document.getElementById('gaussianCountSlider');
+const gaussianCountValue = document.getElementById('gaussianCountValue');
+gaussianCountSlider.addEventListener('input', (e) => {
+  gaussianCount = parseInt(e.target.value);
+  gaussianCountValue.textContent = gaussianCount;
+  gaussians = generateRandomGaussians(gaussianCount);
+  render();
+});
 // ガウシアンをランダム化
 const randomizeButton = document.getElementById('randomizeButton');
 randomizeButton.addEventListener('click', () => {
@@ -425,6 +434,9 @@ ellipsoidSValue.textContent = ellipsoidS.toFixed(2);
 
 logSumExpKSlider.value = logSumExpK;
 logSumExpKValue.textContent = logSumExpK.toFixed(2);
+
+gaussianCountSlider.value = gaussianCount;
+gaussianCountValue.textContent = gaussianCount;
 
 contourLevelsSlider.value = contourLevels;
 contourLevelsValue.textContent = contourLevels;
