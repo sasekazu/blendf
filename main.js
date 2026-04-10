@@ -26,7 +26,11 @@ function generateRandomGaussians(count) {
   });
 }
 
-let gaussians = generateRandomGaussians(50);
+let gaussians = [
+  { x: 0.289, y: 0.357, sx: 0.089, sy: 0.064, theta: 0.35, amp: 1.0 },
+  { x: 0.522, y: 0.514, sx: 0.078, sy: 0.157, theta: -0.5, amp: 0.95 },
+  { x: 0.722, y: 0.343, sx: 0.106, sy: 0.079, theta: 0.9, amp: 0.85 },
+];
 
 // ガウシアンの相対座標を実座標に変換
 function getActualPos(g) {
