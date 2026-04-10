@@ -37,15 +37,12 @@ function computeTauFromS(s) {
 }
 
 // Gaussian和のimplicit形式（F(x) = 0が等値面）
-function gaussianSumField(x, y, s = 1.0) {
-  const tau = computeTauFromS(s);
-
+function gaussianSumField(x, y) {
   let sum = 0;
   for (const g of gaussians) {
     sum += gaussianValue(x, y, g);
   }
-
-  return - sum + tau;
+  return -sum + gaussianDirectTau;
 }
 
 // 楕円体の implicit 関数
@@ -80,14 +77,14 @@ function ellipsoidLogSumExpField(x, y, s = 1.0, k = 5.0) {
     S += item.a * Math.exp(-k * (item.v - vmin));
   }
 
-  return vmin - (1.0 / k) * Math.log(S);
+  return vmin - (1.0 / k) * Math.log(S) - gaussianDirectTau;
 }
 
 // 合成フィールド値を計算
 function fieldValue(x, y) {
   switch (fieldType) {
     case 'gaussian':
-      return gaussianSumField(x, y, ellipsoidS);
+      return gaussianSumField(x, y);
     case 'ellipsoidLogSumExp':
       return ellipsoidLogSumExpField(x, y, ellipsoidS, logSumExpK);
     default:
@@ -101,10 +98,9 @@ function singleFieldValue(x, y, gaussianIndex) {
   
   switch (fieldType) {
     case 'gaussian':
-      const tau = computeTauFromS(ellipsoidS);
-      return -gaussianValue(x, y, g) + tau;
+      return -gaussianValue(x, y, g) + gaussianDirectTau;
     case 'ellipsoidLogSumExp':
-      return ellipsoidValue(x, y, g, ellipsoidS);
+      return ellipsoidValue(x, y, g, ellipsoidS) - gaussianDirectTau;
     default:
       return 0;
   }

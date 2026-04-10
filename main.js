@@ -65,6 +65,7 @@ let showHeatmap = true;
 let fieldType = 'gaussian';
 let ellipsoidS = 2.0;
 let logSumExpK = 0.5;
+let gaussianDirectTau = computeTauFromS(2.0);
 
 // ドラッグ操作用
 let draggedGaussian = null;
@@ -208,15 +209,38 @@ const ellipsoidSControl = document.getElementById('ellipsoidSControl');
 const logSumExpKSlider = document.getElementById('logSumExpKSlider');
 const logSumExpKValue = document.getElementById('logSumExpKValue');
 const logSumExpKControl = document.getElementById('logSumExpKControl');
+const gaussianTauSlider = document.getElementById('gaussianTauSlider');
+const gaussianTauValue = document.getElementById('gaussianTauValue');
+const gaussianTauControl = document.getElementById('gaussianTauControl');
 
 function updateSliderState() {
   const isLogSumExpMode = fieldType === 'ellipsoidLogSumExp';
-  
-  ellipsoidSSlider.disabled = false;
+  const isGaussianMode = fieldType === 'gaussian';
+
+  // s スライダーはLogSumExpモード時のみ有効
+  ellipsoidSSlider.disabled = isGaussianMode;
   if (ellipsoidSControl) {
-    ellipsoidSControl.style.opacity = '1';
+    ellipsoidSControl.style.opacity = isGaussianMode ? '0.5' : '1';
   }
-  
+
+  // τスライダーの範囲をモードに応じて切り替え
+  if (gaussianTauSlider) {
+    if (isLogSumExpMode) {
+      gaussianTauSlider.min = '-30';
+      gaussianTauSlider.max = '30';
+      gaussianTauSlider.step = '0.01';
+    } else {
+      gaussianTauSlider.min = '0.001';
+      gaussianTauSlider.max = '5';
+      gaussianTauSlider.step = '0.001';
+      if (gaussianDirectTau < 0.001) {
+        gaussianDirectTau = 0.001;
+        gaussianTauSlider.value = gaussianDirectTau;
+        if (gaussianTauValue) gaussianTauValue.textContent = gaussianDirectTau.toFixed(3);
+      }
+    }
+  }
+
   logSumExpKSlider.disabled = !isLogSumExpMode;
   if (logSumExpKControl) {
     logSumExpKControl.style.opacity = isLogSumExpMode ? '1' : '0.5';
@@ -248,6 +272,13 @@ fieldTypeRadios.forEach(radio => {
 ellipsoidSSlider.addEventListener('input', (e) => {
   ellipsoidS = parseFloat(e.target.value);
   ellipsoidSValue.textContent = ellipsoidS.toFixed(2);
+  render();
+});
+
+// τ 直接設定
+gaussianTauSlider.addEventListener('input', (e) => {
+  gaussianDirectTau = parseFloat(e.target.value);
+  gaussianTauValue.textContent = gaussianDirectTau.toFixed(3);
   render();
 });
 
