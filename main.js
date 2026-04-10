@@ -11,11 +11,22 @@ let height = canvas.height;
 // sx, sy: 標準偏差スケール（基準サイズに対する比率）
 // theta: 回転角 [rad]
 // amp: 振幅
-let gaussians = [
-  { x: 0.289, y: 0.357, sx: 0.089, sy: 0.064, theta: 0.35, amp: 1.0 },
-  { x: 0.522, y: 0.514, sx: 0.078, sy: 0.157, theta: -0.5, amp: 0.95 },
-  { x: 0.722, y: 0.343, sx: 0.106, sy: 0.079, theta: 0.9, amp: 0.85 },
-];
+function generateRandomGaussians(count) {
+  return Array.from({ length: count }, (_, i) => {
+    const angle = (i / count) * 2 * Math.PI + (Math.random() - 0.5) * (2 * Math.PI / count);
+    const r = 0.2 + (Math.random() - 0.5) * 0.04;
+    return {
+      x: 0.5 + r * Math.cos(angle),
+      y: 0.5 + r * Math.sin(angle),
+      sx: (20 + Math.random() * 60) / 700,
+      sy: (20 + Math.random() * 60) / 700,
+      theta: (Math.random() - 0.5) * Math.PI,
+      amp: 0.8 + Math.random() * 0.4,
+    };
+  });
+}
+
+let gaussians = generateRandomGaussians(50);
 
 // ガウシアンの相対座標を実座標に変換
 function getActualPos(g) {
@@ -296,15 +307,7 @@ showIndividualCheckbox.addEventListener('change', (e) => {
 // ガウシアンをランダム化
 const randomizeButton = document.getElementById('randomizeButton');
 randomizeButton.addEventListener('click', () => {
-  const baseSize = Math.min(width, height);
-  gaussians = gaussians.map(() => ({
-    x: 0.2 + Math.random() * 0.6,
-    y: 0.2 + Math.random() * 0.6,
-    sx: (40 + Math.random() * 80) / baseSize,
-    sy: (40 + Math.random() * 80) / baseSize,
-    theta: (Math.random() - 0.5) * Math.PI,
-    amp: 0.8 + Math.random() * 0.4
-  }));
+  gaussians = generateRandomGaussians(50);
   render();
 });
 
