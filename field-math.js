@@ -64,25 +64,6 @@ function ellipsoidValue(x, y, g, s = 1.0) {
   return (lx * lx) / (actual.sx * actual.sx) + (ly * ly) / (actual.sy * actual.sy) - s * s;
 }
 
-// 楕円体関数の単純和
-function ellipsoidSumField(x, y, s = 1.0) {
-  let sum = 0;
-  for (const g of gaussians) {
-    sum += ellipsoidValue(x, y, g, s);
-  }
-  return sum;
-}
-
-// 楕円体 hard min
-function ellipsoidMinField(x, y, s = 1.0) {
-  let minV = Infinity;
-  for (const g of gaussians) {
-    const v = ellipsoidValue(x, y, g, s);
-    if (v < minV) minV = v;
-  }
-  return minV;
-}
-
 // 楕円体 soft-min (log-sum-exp)
 function ellipsoidLogSumExpField(x, y, s = 1.0, k = 5.0) {
   let vmin = Infinity;
@@ -102,67 +83,13 @@ function ellipsoidLogSumExpField(x, y, s = 1.0, k = 5.0) {
   return vmin - (1.0 / k) * Math.log(S);
 }
 
-// Polynomial smooth min (pairwise)
-function sminPoly(a, b, h) {
-  const t = Math.max(h - Math.abs(a - b), 0.0) / h;
-  return Math.min(a, b) - 0.25 * h * t * t;
-}
-
-// 楕円体 polynomial smooth min
-function ellipsoidPolyMinField(x, y, s = 1.0, h = 0.5) {
-  let f = ellipsoidValue(x, y, gaussians[0], s);
-  for (let i = 1; i < gaussians.length; i++) {
-    f = sminPoly(f, ellipsoidValue(x, y, gaussians[i], s), h);
-  }
-  return f;
-}
-
-// R-function (R-union)
-function rUnion(a, b) {
-  return a + b - Math.sqrt(a * a + b * b);
-}
-
-// 楕円体 R-union
-function ellipsoidRUnionField(x, y, s = 1.0) {
-  let f = ellipsoidValue(x, y, gaussians[0], s);
-  for (let i = 1; i < gaussians.length; i++) {
-    const v = ellipsoidValue(x, y, gaussians[i], s);
-    f = rUnion(f, v);
-  }
-  return f;
-}
-
-// Ricci blending
-function ricciField(x, y, s = 1.0, n = 4.0, T = 0.3) {
-  let sum = 0;
-
-  for (const g of gaussians) {
-    const v = ellipsoidValue(x, y, g, s);
-    const phi = Math.max(-v, 0.0); // inside contribution only
-    sum += Math.pow(phi, n);
-  }
-
-  const Phi = Math.pow(sum, 1.0 / n);
-  return T - Phi;   // 0-level set
-}
-
 // 合成フィールド値を計算
 function fieldValue(x, y) {
   switch (fieldType) {
     case 'gaussian':
       return gaussianSumField(x, y, ellipsoidS);
-    case 'ellipsoidSum':
-      return ellipsoidSumField(x, y, ellipsoidS);
-    case 'ellipsoidMin':
-      return ellipsoidMinField(x, y, ellipsoidS);
     case 'ellipsoidLogSumExp':
       return ellipsoidLogSumExpField(x, y, ellipsoidS, logSumExpK);
-    case 'ellipsoidPolyMin':
-      return ellipsoidPolyMinField(x, y, ellipsoidS, polyBlendH);
-    case 'ellipsoidRUnion':
-      return ellipsoidRUnionField(x, y, ellipsoidS);
-    case 'ellipsoidRicci':
-      return ricciField(x, y, ellipsoidS, ricciN, ricciT);
     default:
       return 0;
   }
@@ -176,12 +103,7 @@ function singleFieldValue(x, y, gaussianIndex) {
     case 'gaussian':
       const tau = computeTauFromS(ellipsoidS);
       return -gaussianValue(x, y, g) + tau;
-    case 'ellipsoidSum':
-    case 'ellipsoidMin':
     case 'ellipsoidLogSumExp':
-    case 'ellipsoidPolyMin':
-    case 'ellipsoidRUnion':
-    case 'ellipsoidRicci':
       return ellipsoidValue(x, y, g, ellipsoidS);
     default:
       return 0;

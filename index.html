@@ -21,28 +21,8 @@
             <span>Gaussian Sum</span>
           </label>
           <label class="radio-label">
-            <input type="radio" name="fieldType" value="ellipsoidMin" autocomplete="off">
-            <span>Ellipsoid Hard Min</span>
-          </label>
-          <label class="radio-label">
             <input type="radio" name="fieldType" value="ellipsoidLogSumExp" autocomplete="off">
             <span>Ellipsoid Log-Sum-Exp</span>
-          </label>
-          <label class="radio-label">
-            <input type="radio" name="fieldType" value="ellipsoidPolyMin" autocomplete="off">
-            <span>Ellipsoid Polynomial Smooth Min</span>
-          </label>
-          <label class="radio-label">
-            <input type="radio" name="fieldType" value="ellipsoidRUnion" autocomplete="off">
-            <span>Ellipsoid R-Function</span>
-          </label>
-          <label class="radio-label">
-            <input type="radio" name="fieldType" value="ellipsoidRicci" autocomplete="off">
-            <span>Ellipsoid Ricci Blending</span>
-          </label>
-          <label class="radio-label">
-            <input type="radio" name="fieldType" value="ellipsoidSum" autocomplete="off">
-            <span>Ellipsoid Average</span>
           </label>
         </div>
       </div>
@@ -61,30 +41,6 @@
           <span id="logSumExpKValue">0.50</span>
         </div>
         <input type="range" id="logSumExpKSlider" min="0.01" max="1.5" step="0.01" value="0.5">
-      </div>
-      
-      <div class="slider-control" id="polyBlendHControl">
-        <div class="slider-label-row">
-          <label for="polyBlendHSlider">Poly Blend h:</label>
-          <span id="polyBlendHValue">0.50</span>
-        </div>
-        <input type="range" id="polyBlendHSlider" min="0.1" max="2.0" step="0.05" value="0.5">
-      </div>
-      
-      <div class="slider-control" id="ricciNControl">
-        <div class="slider-label-row">
-          <label for="ricciNSlider">Ricci n:</label>
-          <span id="ricciNValue">4.0</span>
-        </div>
-        <input type="range" id="ricciNSlider" min="1.0" max="16.0" step="0.5" value="4.0">
-      </div>
-      
-      <div class="slider-control" id="ricciTControl">
-        <div class="slider-label-row">
-          <label for="ricciTSlider">Ricci T:</label>
-          <span id="ricciTValue">0.30</span>
-        </div>
-        <input type="range" id="ricciTSlider" min="0.0" max="1.0" step="0.02" value="0.3">
       </div>
       
       <div class="slider-control">

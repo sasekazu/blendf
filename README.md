@@ -15,12 +15,7 @@ blendf visualizes how multiple 2D implicit fields (Gaussian or ellipsoid-based) 
 | Method | Description |
 |---|---|
 | **Gaussian Sum** | Sum of anisotropic Gaussian kernels |
-| **Ellipsoid Hard Min** | Pointwise minimum of ellipsoid fields |
 | **Ellipsoid Log-Sum-Exp** | Smooth approximation of the minimum via Log-Sum-Exp |
-| **Ellipsoid Polynomial Smooth Min** | Smooth minimum using a polynomial blend |
-| **Ellipsoid R-Function** | Boolean-style union via R-functions |
-| **Ellipsoid Ricci Blending** | Generalized blending based on Ricci's formula |
-| **Ellipsoid Average** | Simple average of ellipsoid fields |
 
 ## Usage
 
@@ -28,7 +23,7 @@ Open `index.html` directly in a browser, or visit the GitHub Pages link above.
 
 - **Drag** an ellipse to reposition it.
 - Select a **Field Type** from the radio buttons.
-- Adjust blending parameters (k, h, n, t, s) with the sliders.
+- Adjust blending parameters (k, s) with the sliders.
 
 ## Files
 
