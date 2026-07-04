@@ -206,13 +206,16 @@ html, body {
     flex-direction: column;
     padding: 0;
     gap: 0;
+    align-items: flex-start;
+    justify-content: flex-start;
   }
   
   #view {
     width: 100vw !important;
-    height: 65vh !important;
     max-width: 100vw;
     display: block;
+    margin: 0;
+    position: relative;
   }
   
   .controls {
@@ -221,9 +224,7 @@ html, body {
     left: 0;
     right: 0;
     width: 100%;
-    max-height: 0;
     min-width: auto;
-    padding: 0 20px;
     overflow-y: auto;
     transition: max-height 0.3s ease, padding 0.3s ease;
     border-radius: 16px 16px 0 0;
@@ -231,18 +232,31 @@ html, body {
     z-index: 999;
   }
   
+  .toggle-controls-button.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* レスポンシブデザイン: 481px～768px タブレット */
+@media (min-width: 481px) and (max-width: 768px) {
+  #view {
+    height: 65vh !important;
+  }
+  
+  .controls {
+    max-height: 0;
+    padding: 0 20px;
+  }
+  
   .controls.expanded {
     max-height: 65vh;
     padding: 20px;
   }
   
+  /* タブレットではトグルボタンを表示 */
   .toggle-controls-button {
-    display: block;
-  }
-  
-  .toggle-controls-button.hidden {
-    opacity: 0;
-    pointer-events: none;
+    display: block !important;
   }
 }
 
@@ -252,17 +266,37 @@ html, body {
     font-size: 14px;
   }
   
+  .app {
+    padding: 0;
+    gap: 0;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+  
   #view {
-    height: 60vh !important;
+    height: 45vh !important;
+    margin: 0;
+    display: block;
   }
   
   .controls {
-    padding: 0 15px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 55vh;
+    padding: 15px;
+    overflow-y: auto;
+    border-radius: 12px 12px 0 0;
+    /* スマホでは常に表示 */
+    display: flex !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
   }
   
+  /* スマホではexpandedクラスは不要だが一応設定 */
   .controls.expanded {
-    max-height: 70vh;
-    padding: 15px;
+    max-height: 55vh;
   }
   
   .radio-label span,
@@ -271,11 +305,9 @@ html, body {
     font-size: 13px;
   }
   
+  /* スマホではトグルボタンを非表示 */
   .toggle-controls-button {
-    bottom: 15px;
-    right: 15px;
-    padding: 10px 16px;
-    font-size: 14px;
+    display: none !important;
   }
 }
 
