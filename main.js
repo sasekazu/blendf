@@ -383,6 +383,11 @@ const controlsPanel = document.getElementById('controls');
 
 if (toggleControlsButton && controlsPanel) {
   toggleControlsButton.addEventListener('click', () => {
+    // スマホ（480px以下）では何もしない
+    if (window.innerWidth <= 480) {
+      return;
+    }
+    
     const isExpanded = controlsPanel.classList.contains('expanded');
     
     if (isExpanded) {
@@ -395,9 +400,10 @@ if (toggleControlsButton && controlsPanel) {
     }
   });
   
-  // コントロールパネル外をタップで閉じる（モバイルのみ）
+  // コントロールパネル外をタップで閉じる（タブレットのみ）
   document.addEventListener('click', (e) => {
-    if (window.innerWidth <= 768) {
+    // スマホ（480px以下）では何もしない、タブレット（481-768px）のみ動作
+    if (window.innerWidth > 480 && window.innerWidth <= 768) {
       const isControlsClick = controlsPanel.contains(e.target);
       const isButtonClick = toggleControlsButton.contains(e.target);
       const isExpanded = controlsPanel.classList.contains('expanded');
@@ -422,8 +428,12 @@ function resizeCanvas() {
     // モバイル: 画面幅いっぱい
     canvas.width = window.innerWidth;
     if (isSmallMobile) {
-      // 小さい画面: 60vh
-      canvas.height = window.innerHeight * 0.6;
+      // スマホ: 45vh（UIを常に表示）
+      canvas.height = window.innerHeight * 0.45;
+      // スマホではコントロールを常に展開
+      if (controlsPanel) {
+        controlsPanel.classList.add('expanded');
+      }
     } else {
       // タブレット: 65vh
       canvas.height = window.innerHeight * 0.65;
@@ -462,6 +472,18 @@ updateSliderState();
 
 // 初期キャンバスサイズを設定
 resizeCanvas();
+
+// スマホでは初期状態でコントロールを表示し、トグルボタンを非表示
+if (window.innerWidth <= 480) {
+  if (controlsPanel) {
+    controlsPanel.classList.add('expanded');
+    controlsPanel.style.maxHeight = '55vh';
+    controlsPanel.style.padding = '15px';
+  }
+  if (toggleControlsButton) {
+    toggleControlsButton.style.display = 'none';
+  }
+}
 
 // スライダーの初期値を明示的に設定
 ellipsoidSSlider.value = ellipsoidS;
