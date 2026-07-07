@@ -201,7 +201,7 @@ html, body {
 }
 
 /* レスポンシブデザイン: タブレット以下 */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .app {
     flex-direction: column;
     padding: 0;
@@ -212,6 +212,7 @@ html, body {
   
   #view {
     width: 100vw !important;
+    height: 50vh !important;
     max-width: 100vw;
     display: block;
     margin: 0;
@@ -224,39 +225,22 @@ html, body {
     left: 0;
     right: 0;
     width: 100%;
+    max-height: 50vh;
     min-width: auto;
+    padding: 15px;
     overflow-y: auto;
-    transition: max-height 0.3s ease, padding 0.3s ease;
     border-radius: 16px 16px 0 0;
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.4);
     z-index: 999;
+    /* タブレット・スマホ共に常に表示 */
+    display: flex !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
   }
   
-  .toggle-controls-button.hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
-}
-
-/* レスポンシブデザイン: 481px～768px タブレット */
-@media (min-width: 481px) and (max-width: 768px) {
-  #view {
-    height: 65vh !important;
-  }
-  
-  .controls {
-    max-height: 0;
-    padding: 0 20px;
-  }
-  
-  .controls.expanded {
-    max-height: 65vh;
-    padding: 20px;
-  }
-  
-  /* タブレットではトグルボタンを表示 */
+  /* トグルボタンを非表示 */
   .toggle-controls-button {
-    display: block !important;
+    display: none !important;
   }
 }
 
@@ -266,36 +250,11 @@ html, body {
     font-size: 14px;
   }
   
-  .app {
-    padding: 0;
-    gap: 0;
-    align-items: flex-start;
-    justify-content: flex-start;
-  }
-  
   #view {
     height: 45vh !important;
-    margin: 0;
-    display: block;
   }
   
   .controls {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    max-height: 55vh;
-    padding: 15px;
-    overflow-y: auto;
-    border-radius: 12px 12px 0 0;
-    /* スマホでは常に表示 */
-    display: flex !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-  }
-  
-  /* スマホではexpandedクラスは不要だが一応設定 */
-  .controls.expanded {
     max-height: 55vh;
   }
   
@@ -303,11 +262,6 @@ html, body {
   .checkbox-label span,
   .slider-control label {
     font-size: 13px;
-  }
-  
-  /* スマホではトグルボタンを非表示 */
-  .toggle-controls-button {
-    display: none !important;
   }
 }
 
