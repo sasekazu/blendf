@@ -164,7 +164,7 @@ function drawHeatmap(grid) {
 
 // ガウシアンの中心点を描画
 function drawGaussianCenters() {
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = window.innerWidth <= 1024;
   const baseRadius = isMobile ? 8 : 6;
   
   for (const g of gaussians) {

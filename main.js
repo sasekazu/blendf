@@ -89,7 +89,7 @@ function getMousePos(e) {
 
 function findGaussianAt(mx, my) {
   // モバイルではタップ領域を大きく（44px）、デスクトップでは小さく（20px）
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = window.innerWidth <= 1024;
   const threshold = isMobile ? 44 : 20;
   
   for (const g of gaussians) {
@@ -383,8 +383,8 @@ const controlsPanel = document.getElementById('controls');
 
 if (toggleControlsButton && controlsPanel) {
   toggleControlsButton.addEventListener('click', () => {
-    // スマホ（480px以下）では何もしない
-    if (window.innerWidth <= 480) {
+    // タブレット・スマホ（1024px以下）では何もしない
+    if (window.innerWidth <= 1024) {
       return;
     }
     
@@ -400,19 +400,21 @@ if (toggleControlsButton && controlsPanel) {
     }
   });
   
-  // コントロールパネル外をタップで閉じる（タブレットのみ）
+  // タブレット・スマホでは外側タップイベントを無効化
   document.addEventListener('click', (e) => {
-    // スマホ（480px以下）では何もしない、タブレット（481-768px）のみ動作
-    if (window.innerWidth > 480 && window.innerWidth <= 768) {
-      const isControlsClick = controlsPanel.contains(e.target);
-      const isButtonClick = toggleControlsButton.contains(e.target);
-      const isExpanded = controlsPanel.classList.contains('expanded');
-      
-      if (isExpanded && !isControlsClick && !isButtonClick) {
-        controlsPanel.classList.remove('expanded');
-        toggleControlsButton.classList.remove('hidden');
-        toggleControlsButton.textContent = '⚙️ Settings';
-      }
+    // 1024px以下では何もしない
+    if (window.innerWidth <= 1024) {
+      return;
+    }
+    
+    const isControlsClick = controlsPanel.contains(e.target);
+    const isButtonClick = toggleControlsButton.contains(e.target);
+    const isExpanded = controlsPanel.classList.contains('expanded');
+    
+    if (isExpanded && !isControlsClick && !isButtonClick) {
+      controlsPanel.classList.remove('expanded');
+      toggleControlsButton.classList.remove('hidden');
+      toggleControlsButton.textContent = '⚙️ Settings';
     }
   });
 }
@@ -421,7 +423,7 @@ if (toggleControlsButton && controlsPanel) {
 // ============ RESPONSIVE CANVAS ============
 
 function resizeCanvas() {
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = window.innerWidth <= 1024;
   const isSmallMobile = window.innerWidth <= 480;
   
   if (isMobile) {
@@ -430,13 +432,13 @@ function resizeCanvas() {
     if (isSmallMobile) {
       // スマホ: 45vh（UIを常に表示）
       canvas.height = window.innerHeight * 0.45;
-      // スマホではコントロールを常に展開
-      if (controlsPanel) {
-        controlsPanel.classList.add('expanded');
-      }
     } else {
-      // タブレット: 65vh
-      canvas.height = window.innerHeight * 0.65;
+      // タブレット: 50vh（UIを常に表示）
+      canvas.height = window.innerHeight * 0.5;
+    }
+    // タブレット・スマホではコントロールを常に展開
+    if (controlsPanel) {
+      controlsPanel.classList.add('expanded');
     }
   } else {
     // デスクトップ: 固定サイズ
@@ -473,11 +475,15 @@ updateSliderState();
 // 初期キャンバスサイズを設定
 resizeCanvas();
 
-// スマホでは初期状態でコントロールを表示し、トグルボタンを非表示
-if (window.innerWidth <= 480) {
+// タブレット・スマホでは初期状態でコントロールを表示し、トグルボタンを非表示
+if (window.innerWidth <= 1024) {
   if (controlsPanel) {
     controlsPanel.classList.add('expanded');
-    controlsPanel.style.maxHeight = '55vh';
+    if (window.innerWidth <= 480) {
+      controlsPanel.style.maxHeight = '55vh';
+    } else {
+      controlsPanel.style.maxHeight = '50vh';
+    }
     controlsPanel.style.padding = '15px';
   }
   if (toggleControlsButton) {
