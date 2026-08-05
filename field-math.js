@@ -115,8 +115,7 @@ function ricciField(x, y, s = 1.0, n = 4.0, T = 0.3) {
   let sum = 0;
 
   for (const g of gaussians) {
-    const v = ellipsoidValue(x, y, g, s);
-    const phi = Math.max(-v, 0.0); // inside contribution only
+    const phi = gaussianValue(x, y, g);
     sum += Math.pow(phi, n);
   }
 
@@ -148,11 +147,11 @@ function singleFieldValue(x, y, gaussianIndex) {
   
   switch (fieldType) {
     case 'gaussian':
+    case 'ellipsoidRicci':
       return gaussianValue(x, y, g);
     case 'ellipsoidLogSumExp':
     case 'ellipsoidPolyMin':
     case 'ellipsoidRUnion':
-    case 'ellipsoidRicci':
       return ellipsoidValue(x, y, g, ellipsoidS);
     default:
       return 0;
