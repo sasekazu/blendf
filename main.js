@@ -69,6 +69,9 @@ let showHeatmap = true;
 let fieldType = 'gaussian';
 let ellipsoidS = 2.0;
 let logSumExpK = 0.5;
+let polyBlendH = 0.5;
+let ricciN = 4.0;
+let ricciT = 0.3;
 let gaussianDirectTau = computeTauFromS(2.0);
 
 // ドラッグ操作用
@@ -216,10 +219,21 @@ const logSumExpKControl = document.getElementById('logSumExpKControl');
 const gaussianTauSlider = document.getElementById('gaussianTauSlider');
 const gaussianTauValue = document.getElementById('gaussianTauValue');
 const gaussianTauControl = document.getElementById('gaussianTauControl');
+const polyBlendHSlider = document.getElementById('polyBlendHSlider');
+const polyBlendHValue = document.getElementById('polyBlendHValue');
+const polyBlendHControl = document.getElementById('polyBlendHControl');
+const ricciNSlider = document.getElementById('ricciNSlider');
+const ricciNValue = document.getElementById('ricciNValue');
+const ricciNControl = document.getElementById('ricciNControl');
+const ricciTSlider = document.getElementById('ricciTSlider');
+const ricciTValue = document.getElementById('ricciTValue');
+const ricciTControl = document.getElementById('ricciTControl');
 
 function updateSliderState() {
   const isLogSumExpMode = fieldType === 'ellipsoidLogSumExp';
   const isGaussianMode = fieldType === 'gaussian';
+  const isPolyMinMode = fieldType === 'ellipsoidPolyMin';
+  const isRicciMode = fieldType === 'ellipsoidRicci';
 
   // s スライダーはLogSumExpモード時のみ有効
   ellipsoidSSlider.disabled = isGaussianMode;
@@ -248,6 +262,21 @@ function updateSliderState() {
   logSumExpKSlider.disabled = !isLogSumExpMode;
   if (logSumExpKControl) {
     logSumExpKControl.style.opacity = isLogSumExpMode ? '1' : '0.5';
+  }
+
+  polyBlendHSlider.disabled = !isPolyMinMode;
+  if (polyBlendHControl) {
+    polyBlendHControl.style.opacity = isPolyMinMode ? '1' : '0.5';
+  }
+
+  ricciNSlider.disabled = !isRicciMode;
+  if (ricciNControl) {
+    ricciNControl.style.opacity = isRicciMode ? '1' : '0.5';
+  }
+
+  ricciTSlider.disabled = !isRicciMode;
+  if (ricciTControl) {
+    ricciTControl.style.opacity = isRicciMode ? '1' : '0.5';
   }
 }
 
@@ -290,6 +319,27 @@ gaussianTauSlider.addEventListener('input', (e) => {
 logSumExpKSlider.addEventListener('input', (e) => {
   logSumExpK = parseFloat(e.target.value);
   logSumExpKValue.textContent = logSumExpK.toFixed(2);
+  render();
+});
+
+// polynomial blend h パラメータ
+polyBlendHSlider.addEventListener('input', (e) => {
+  polyBlendH = parseFloat(e.target.value);
+  polyBlendHValue.textContent = polyBlendH.toFixed(2);
+  render();
+});
+
+// Ricci n パラメータ
+ricciNSlider.addEventListener('input', (e) => {
+  ricciN = parseFloat(e.target.value);
+  ricciNValue.textContent = ricciN.toFixed(1);
+  render();
+});
+
+// Ricci T パラメータ
+ricciTSlider.addEventListener('input', (e) => {
+  ricciT = parseFloat(e.target.value);
+  ricciTValue.textContent = ricciT.toFixed(2);
   render();
 });
 
@@ -497,6 +547,15 @@ ellipsoidSValue.textContent = ellipsoidS.toFixed(2);
 
 logSumExpKSlider.value = logSumExpK;
 logSumExpKValue.textContent = logSumExpK.toFixed(2);
+
+polyBlendHSlider.value = polyBlendH;
+polyBlendHValue.textContent = polyBlendH.toFixed(2);
+
+ricciNSlider.value = ricciN;
+ricciNValue.textContent = ricciN.toFixed(1);
+
+ricciTSlider.value = ricciT;
+ricciTValue.textContent = ricciT.toFixed(2);
 
 gaussianCountSlider.value = gaussianCount;
 gaussianCountValue.textContent = gaussianCount;
