@@ -19,7 +19,7 @@ blendf visualizes how multiple 2D implicit fields (Gaussian or ellipsoid-based) 
 
 ## Usage
 
-Open `index.html` directly in a browser, or visit the GitHub Pages link above.
+Open `index.html` directly in a browser, or visit the GitHub Pages link above. It's a top page linking to the visualizations; the main one is `step-by-step.html`.
 
 - **Drag** an ellipse to reposition it.
 - Select a **Field Type** from the radio buttons.
@@ -29,7 +29,8 @@ Open `index.html` directly in a browser, or visit the GitHub Pages link above.
 
 | File | Role |
 |---|---|
-| `index.html` | UI layout and controls |
+| `index.html` | Top page, links to the visualization pages |
+| `step-by-step.html` | Step by Step Visualization UI layout and controls |
 | `style.css` | Styling |
 | `main.js` | Canvas rendering and mouse interaction |
 | `renderer.js` | Heatmap and contour drawing |

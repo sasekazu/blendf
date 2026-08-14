@@ -2,114 +2,88 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Gaussian / LogSumExp Visualizer Scaffold</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>blendf</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100%;
+      background: #111;
+      color: #eee;
+      font-family: sans-serif;
+    }
+
+    .top {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 60px 20px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #999;
+      margin: 0 0 40px;
+      font-size: 15px;
+    }
+
+    .demo-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .demo-link {
+      display: block;
+      padding: 20px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      text-decoration: none;
+      color: #eee;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .demo-link:hover {
+      border-color: #ff8844;
+      background: #221a14;
+    }
+
+    .demo-link .demo-title {
+      display: block;
+      font-size: 17px;
+      font-weight: bold;
+      color: #ff8844;
+      margin-bottom: 4px;
+    }
+
+    .demo-link .demo-desc {
+      display: block;
+      font-size: 14px;
+      color: #aaa;
+    }
+  </style>
 </head>
 <body>
-  <div class="app">
-    <canvas id="view" width="900" height="700"></canvas>
-    <button id="toggleControlsButton" class="toggle-controls-button" aria-label="Toggle controls">
-      ⚙️ Settings
-    </button>
-    <div class="controls" id="controls">
-      <div class="radio-group">
-        <label>Field Type:</label>
-        <div class="radio-options">
-          <label class="radio-label">
-            <input type="radio" name="fieldType" value="gaussian" checked autocomplete="off">
-            <span>Gaussian Sum</span>
-          </label>
-          <label class="radio-label">
-            <input type="radio" name="fieldType" value="ellipsoidLogSumExp" autocomplete="off">
-            <span>Ellipsoid Log-Sum-Exp</span>
-          </label>
-        </div>
-      </div>
+  <div class="top">
+    <h1>blendf</h1>
+    <p class="subtitle">2D implicit field blending visualizations</p>
 
-      <div class="slider-control" id="gaussianTauControl">
-        <div class="slider-label-row">
-          <label for="gaussianTauSlider">τ (threshold):</label>
-          <span id="gaussianTauValue">0.135</span>
-        </div>
-        <input type="range" id="gaussianTauSlider" min="0.001" max="5.0" step="0.001" value="0.135">
-      </div>
-      
-      <div class="slider-control" id="logSumExpKControl">
-        <div class="slider-label-row">
-          <label for="logSumExpKSlider">Log-Sum-Exp k:</label>
-          <span id="logSumExpKValue">0.50</span>
-        </div>
-        <input type="range" id="logSumExpKSlider" min="0.01" max="1.5" step="0.01" value="0.5">
-      </div>
-      
-      <div class="slider-control" id="ellipsoidSControl">
-        <div class="slider-label-row">
-          <label for="ellipsoidSSlider">Radius s:</label>
-          <span id="ellipsoidSValue">2.00</span>
-        </div>
-        <input type="range" id="ellipsoidSSlider" min="0.01" max="3.0" step="0.01" value="2.0">
-      </div>
-      
-      <div class="slider-control">
-        <div class="slider-label-row">
-          <label for="contourLevelsSlider">Contour Levels:</label>
-          <span id="contourLevelsValue">1</span>
-        </div>
-        <input type="range" id="contourLevelsSlider" min="1" max="20" step="1" value="1">
-      </div>
-      
-      <div class="slider-control">
-        <div class="slider-label-row">
-          <label for="contourStepSlider">Contour Step:</label>
-          <span id="contourStepValue">0.10</span>
-        </div>
-        <input type="range" id="contourStepSlider" min="0.1" max="5.0" step="0.1" value="0.1">
-      </div>
-      
-      <div class="slider-control">
-        <div class="slider-label-row">
-          <label for="gridStepSlider">Grid Step:</label>
-          <span id="gridStepValue">4</span>
-        </div>
-        <input type="range" id="gridStepSlider" min="1" max="10" step="1" value="4">
-      </div>
-      
-      <div class="checkbox-control">
-        <label class="checkbox-label">
-          <input type="checkbox" id="showHeatmapCheckbox" checked>
-          <span>Show Heatmap</span>
-        </label>
-      </div>
-      
-      <div class="checkbox-control">
-        <label class="checkbox-label">
-          <input type="checkbox" id="showCombinedContoursCheckbox" checked>
-          <span>Show Combined Contours</span>
-        </label>
-      </div>
-      
-      <div class="checkbox-control">
-        <label class="checkbox-label">
-          <input type="checkbox" id="showIndividualCheckbox">
-          <span>Show Individual Contours</span>
-        </label>
-      </div>
-
-      <div class="checkbox-control">
-        <label class="checkbox-label">
-          <input type="checkbox" id="showSurfaceSearchCheckbox" checked>
-          <span>Show Surface Search (P → Q)</span>
-        </label>
-      </div>
-
-      <button id="clearPointsButton" class="action-button">Clear All P Points</button>
-
+    <div class="demo-list">
+      <a class="demo-link" href="step-by-step.html">
+        <span class="demo-title">Step by Step Visualization</span>
+        <span class="demo-desc">Gaussian / Log-Sum-Exp field blending, contour search, and surface exploration.</span>
+      </a>
     </div>
   </div>
-
-  <script src="field-math.js"></script>
-  <script src="renderer.js"></script>
-  <script src="main.js"></script>
 </body>
 </html>
