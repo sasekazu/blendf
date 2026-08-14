@@ -448,6 +448,13 @@ showSurfaceSearchCheckbox.addEventListener('change', (e) => {
   showSurfaceSearch = e.target.checked;
   render();
 });
+
+// P点（P0, P1, ...）を全消去
+const clearPointsButton = document.getElementById('clearPointsButton');
+clearPointsButton.addEventListener('click', () => {
+  points = [];
+  render();
+});
 // ============ MOBILE CONTROLS TOGGLE ============
 
 const toggleControlsButton = document.getElementById('toggleControlsButton');
