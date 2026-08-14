@@ -246,26 +246,69 @@ function drawPointP() {
   ctx.fillText('P', pos.x, pos.y - baseRadius - 2);
 }
 
+// 点Pから探索して得られた表面上の点Qを描画（P-Q間を結ぶ線も表示）
+function drawPointQ() {
+  if (!pointQ) return;
+
+  const isMobile = window.innerWidth <= 1024;
+  const baseRadius = isMobile ? 7 : 5;
+  const posP = getActualPos(pointP);
+
+  // PとQを結ぶ線（探索に失敗した場合は赤で表示）
+  ctx.beginPath();
+  ctx.setLineDash([5, 3]);
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = pointQ.found ? 'rgba(120, 255, 150, 0.8)' : 'rgba(255, 90, 90, 0.8)';
+  ctx.moveTo(posP.x, posP.y);
+  ctx.lineTo(pointQ.x, pointQ.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // 点Qのマーカー
+  ctx.beginPath();
+  ctx.arc(pointQ.x, pointQ.y, baseRadius, 0, Math.PI * 2);
+  ctx.fillStyle = pointQ.found ? '#55ff88' : '#ff5555';
+  ctx.strokeStyle = pointQ.found ? '#22cc55' : '#cc2222';
+  ctx.lineWidth = 2;
+  ctx.fill();
+  ctx.stroke();
+
+  // ラベル「Q」
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('Q', pointQ.x, pointQ.y - baseRadius - 2);
+}
+
 // メイン描画関数
 function render() {
   ctx.clearRect(0, 0, width, height);
   const grid = computeFieldGrid();
-  
+
   // 合成場の色描画（ヒートマップ）
   if (showHeatmap) {
     drawHeatmap(grid);
   }
-  
+
   // 合成場の等高線
   if (showCombinedContours) {
     drawCombinedContours(grid);
   }
-  
+
   // 個別の等高線を表示
   if (showIndividualContours) {
     drawIndividualContours();
   }
-  
+
   drawGaussianCenters();
+
+  // 点Pから表面上の点Qを探索して表示
+  if (showSurfaceSearch) {
+    const posP = getActualPos(pointP);
+    pointQ = findSurfaceFromSeed(posP.x, posP.y);
+    drawPointQ();
+  }
+
   drawPointP();
 }

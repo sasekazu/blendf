@@ -20,6 +20,9 @@ let gaussians = [
 // 評価点P（ガウシアンの中心と同様にドラッグで移動可能）
 let pointP = { x: 0.5, y: 0.7 };
 
+// 点Pから探索されたスカラー場表面上の点Q（実座標）。render()内で毎回更新される。
+let pointQ = null;
+
 // ガウシアンの相対座標を実座標に変換
 function getActualPos(g) {
   return {
@@ -52,6 +55,7 @@ let gridStep = 4;
 let showIndividualContours = false;
 let showCombinedContours = true;
 let showHeatmap = true;
+let showSurfaceSearch = true;
 
 // フィールド設定
 let fieldType = 'gaussian';
@@ -323,6 +327,12 @@ showCombinedContoursCheckbox.addEventListener('change', (e) => {
 const showIndividualCheckbox = document.getElementById('showIndividualCheckbox');
 showIndividualCheckbox.addEventListener('change', (e) => {
   showIndividualContours = e.target.checked;
+  render();
+});
+
+const showSurfaceSearchCheckbox = document.getElementById('showSurfaceSearchCheckbox');
+showSurfaceSearchCheckbox.addEventListener('change', (e) => {
+  showSurfaceSearch = e.target.checked;
   render();
 });
 // ============ MOBILE CONTROLS TOGGLE ============
