@@ -69,6 +69,9 @@ let draggedPoint = null;
 let isDragging = false;
 let hoveredPoint = null;
 
+// 選択中のガウシアン（クリックで選択。x/X, y/Y, r/Rキーで変形操作の対象になる）
+let selectedGaussian = null;
+
 // pキーでの点追加用（canvas上でのマウス位置を追跡）
 let lastMousePos = null;
 let isMouseOverCanvas = false;
@@ -109,6 +112,9 @@ canvas.addEventListener('mousedown', (e) => {
     isDragging = true;
     canvas.style.cursor = 'grabbing';
   }
+  // ガウシアンをクリックしたときのみ選択状態にする（それ以外はクリックで選択解除）
+  selectedGaussian = gaussians.includes(g) ? g : null;
+  render();
 });
 
 canvas.addEventListener('mouseenter', () => {
@@ -197,6 +203,40 @@ window.addEventListener('keydown', (e) => {
   render();
 });
 
+// 選択中のガウシアンをキー入力で変形する
+// x/X: x方向スケールの拡大・縮小、y/Y: y方向スケールの拡大・縮小、r/R: 正回転・逆回転
+window.addEventListener('keydown', (e) => {
+  if (!selectedGaussian) return;
+  if (isTypingIntoField()) return;
+
+  const scaleFactor = 1.05;
+  const rotateStep = Math.PI / 36; // 5度
+
+  switch (e.key) {
+    case 'x':
+      selectedGaussian.sx *= scaleFactor;
+      break;
+    case 'X':
+      selectedGaussian.sx /= scaleFactor;
+      break;
+    case 'y':
+      selectedGaussian.sy *= scaleFactor;
+      break;
+    case 'Y':
+      selectedGaussian.sy /= scaleFactor;
+      break;
+    case 'r':
+      selectedGaussian.theta += rotateStep;
+      break;
+    case 'R':
+      selectedGaussian.theta -= rotateStep;
+      break;
+    default:
+      return;
+  }
+  render();
+});
+
 
 // ============ TOUCH INTERACTION ============
 
@@ -216,8 +256,9 @@ canvas.addEventListener('touchstart', (e) => {
   if (g) {
     draggedPoint = g;
     isDragging = true;
-    render();
   }
+  selectedGaussian = gaussians.includes(g) ? g : null;
+  render();
 });
 
 canvas.addEventListener('touchmove', (e) => {

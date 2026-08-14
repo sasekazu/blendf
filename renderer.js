@@ -171,7 +171,20 @@ function drawGaussianCenters() {
     const pos = getActualPos(g);
     const isDragged = g === draggedPoint;
     const isHovered = g === hoveredPoint;
-    
+    const isSelected = g === selectedGaussian;
+
+    // 選択中のガウシアンには外側に白い破線リングを表示
+    // （x/X, y/Y, r/Rキーによる変形操作の対象であることを示す）
+    if (isSelected) {
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, baseRadius + 5, 0, Math.PI * 2);
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
     // ガウシアンの中心点（大きめに）
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, baseRadius, 0, Math.PI * 2);
