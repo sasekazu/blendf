@@ -11,21 +11,6 @@ let height = canvas.height;
 // sx, sy: 標準偏差スケール（基準サイズに対する比率）
 // theta: 回転角 [rad]
 // amp: 振幅
-function generateRandomGaussians(count) {
-  return Array.from({ length: count }, (_, i) => {
-    const angle = (i / count) * 2 * Math.PI + (Math.random() - 0.5) * (2 * Math.PI / count);
-    const r = 0.2 + (Math.random() - 0.5) * 0.04;
-    return {
-      x: 0.5 + r * Math.cos(angle),
-      y: 0.5 + r * Math.sin(angle),
-      sx: (20 + Math.random() * 60) / 700,
-      sy: (20 + Math.random() * 60) / 700,
-      theta: (Math.random() - 0.5) * Math.PI,
-      amp: 0.8 + Math.random() * 0.4,
-    };
-  });
-}
-
 let gaussians = [
   { x: 0.289, y: 0.357, sx: 0.089, sy: 0.064, theta: 0.35, amp: 1.0 },
   { x: 0.522, y: 0.514, sx: 0.078, sy: 0.157, theta: -0.5, amp: 0.95 },
@@ -69,9 +54,6 @@ let showHeatmap = true;
 let fieldType = 'gaussian';
 let ellipsoidS = 2.0;
 let logSumExpK = 0.5;
-let polyBlendH = 0.5;
-let ricciN = 4.0;
-let ricciT = 0.3;
 let gaussianDirectTau = computeTauFromS(2.0);
 
 // ドラッグ操作用
@@ -219,21 +201,9 @@ const logSumExpKControl = document.getElementById('logSumExpKControl');
 const gaussianTauSlider = document.getElementById('gaussianTauSlider');
 const gaussianTauValue = document.getElementById('gaussianTauValue');
 const gaussianTauControl = document.getElementById('gaussianTauControl');
-const polyBlendHSlider = document.getElementById('polyBlendHSlider');
-const polyBlendHValue = document.getElementById('polyBlendHValue');
-const polyBlendHControl = document.getElementById('polyBlendHControl');
-const ricciNSlider = document.getElementById('ricciNSlider');
-const ricciNValue = document.getElementById('ricciNValue');
-const ricciNControl = document.getElementById('ricciNControl');
-const ricciTSlider = document.getElementById('ricciTSlider');
-const ricciTValue = document.getElementById('ricciTValue');
-const ricciTControl = document.getElementById('ricciTControl');
-
 function updateSliderState() {
   const isLogSumExpMode = fieldType === 'ellipsoidLogSumExp';
   const isGaussianMode = fieldType === 'gaussian';
-  const isPolyMinMode = fieldType === 'ellipsoidPolyMin';
-  const isRicciMode = fieldType === 'ellipsoidRicci';
 
   // s スライダーはLogSumExpモード時のみ有効
   ellipsoidSSlider.disabled = isGaussianMode;
@@ -262,21 +232,6 @@ function updateSliderState() {
   logSumExpKSlider.disabled = !isLogSumExpMode;
   if (logSumExpKControl) {
     logSumExpKControl.style.opacity = isLogSumExpMode ? '1' : '0.5';
-  }
-
-  polyBlendHSlider.disabled = !isPolyMinMode;
-  if (polyBlendHControl) {
-    polyBlendHControl.style.opacity = isPolyMinMode ? '1' : '0.5';
-  }
-
-  ricciNSlider.disabled = !isRicciMode;
-  if (ricciNControl) {
-    ricciNControl.style.opacity = isRicciMode ? '1' : '0.5';
-  }
-
-  ricciTSlider.disabled = !isRicciMode;
-  if (ricciTControl) {
-    ricciTControl.style.opacity = isRicciMode ? '1' : '0.5';
   }
 }
 
@@ -319,27 +274,6 @@ gaussianTauSlider.addEventListener('input', (e) => {
 logSumExpKSlider.addEventListener('input', (e) => {
   logSumExpK = parseFloat(e.target.value);
   logSumExpKValue.textContent = logSumExpK.toFixed(2);
-  render();
-});
-
-// polynomial blend h パラメータ
-polyBlendHSlider.addEventListener('input', (e) => {
-  polyBlendH = parseFloat(e.target.value);
-  polyBlendHValue.textContent = polyBlendH.toFixed(2);
-  render();
-});
-
-// Ricci n パラメータ
-ricciNSlider.addEventListener('input', (e) => {
-  ricciN = parseFloat(e.target.value);
-  ricciNValue.textContent = ricciN.toFixed(1);
-  render();
-});
-
-// Ricci T パラメータ
-ricciTSlider.addEventListener('input', (e) => {
-  ricciT = parseFloat(e.target.value);
-  ricciTValue.textContent = ricciT.toFixed(2);
   render();
 });
 
@@ -388,44 +322,6 @@ showIndividualCheckbox.addEventListener('change', (e) => {
   showIndividualContours = e.target.checked;
   render();
 });
-// ガウシアン個数スライダー
-let gaussianCount = 3;
-const gaussianCountSlider = document.getElementById('gaussianCountSlider');
-const gaussianCountValue = document.getElementById('gaussianCountValue');
-gaussianCountSlider.addEventListener('input', (e) => {
-  gaussianCount = parseInt(e.target.value);
-  gaussianCountValue.textContent = gaussianCount;
-  gaussians = generateRandomGaussians(gaussianCount);
-  render();
-});
-// ガウシアンをランダム化
-const randomizeButton = document.getElementById('randomizeButton');
-randomizeButton.addEventListener('click', () => {
-  gaussians = generateRandomGaussians(50);
-  render();
-});
-
-// スケールを拡大（+10%）
-const scaleUpButton = document.getElementById('scaleUpButton');
-scaleUpButton.addEventListener('click', () => {
-  gaussians.forEach(g => {
-    g.sx *= 1.1;
-    g.sy *= 1.1;
-  });
-  render();
-});
-
-// スケールを縮小（-10%）
-const scaleDownButton = document.getElementById('scaleDownButton');
-scaleDownButton.addEventListener('click', () => {
-  gaussians.forEach(g => {
-    g.sx *= 0.9;
-    g.sy *= 0.9;
-  });
-  render();
-});
-
-
 // ============ MOBILE CONTROLS TOGGLE ============
 
 const toggleControlsButton = document.getElementById('toggleControlsButton');
@@ -547,18 +443,6 @@ ellipsoidSValue.textContent = ellipsoidS.toFixed(2);
 
 logSumExpKSlider.value = logSumExpK;
 logSumExpKValue.textContent = logSumExpK.toFixed(2);
-
-polyBlendHSlider.value = polyBlendH;
-polyBlendHValue.textContent = polyBlendH.toFixed(2);
-
-ricciNSlider.value = ricciN;
-ricciNValue.textContent = ricciN.toFixed(1);
-
-ricciTSlider.value = ricciT;
-ricciTValue.textContent = ricciT.toFixed(2);
-
-gaussianCountSlider.value = gaussianCount;
-gaussianCountValue.textContent = gaussianCount;
 
 contourLevelsSlider.value = contourLevels;
 contourLevelsValue.textContent = contourLevels;

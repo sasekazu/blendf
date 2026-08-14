@@ -127,52 +127,6 @@ html, body {
   accent-color: #ff8844;
 }
 
-.action-button {
-  padding: 10px 16px;
-  background: #ff8844;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: bold;
-  transition: background 0.2s;
-}
-
-.action-button:hover {
-  background: #ff6622;
-}
-
-.action-button:active {
-  background: #ee5511;
-}
-
-.button-group {
-  display: flex;
-  gap: 8px;
-}
-
-.scale-button {
-  flex: 1;
-  padding: 8px 12px;
-  background: #444;
-  color: #ccc;
-  border: 1px solid #666;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.2s;
-}
-
-.scale-button:hover {
-  background: #555;
-  color: #fff;
-}
-
-.scale-button:active {
-  background: #333;
-}
-
 .toggle-controls-button {
   display: none;
   position: fixed;
@@ -300,52 +254,6 @@ html, body {
   accent-color: #ff8844;
   width: 16px;
   height: 16px;
-}
-
-.action-button {
-  padding: 10px 16px;
-  background: #ff8844;
-  border: none;
-  border-radius: 4px;
-  color: #fff;
-  font-size: 14px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.action-button:hover {
-  background: #ff9955;
-}
-
-.action-button:active {
-  background: #ee7733;
-}
-
-.button-group {
-  display: flex;
-  gap: 10px;
-}
-
-.scale-button {
-  flex: 1;
-  padding: 10px 16px;
-  background: #333;
-  border: 1px solid #555;
-  border-radius: 4px;
-  color: #eee;
-  font-size: 14px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.scale-button:hover {
-  background: #444;
-}
-
-.scale-button:active {
-  background: #555;
 }
 
 canvas {
