@@ -76,6 +76,12 @@ let contactTangent = null; // Qでの法線・接線（{nx,ny,tx,ty}）。接触
 let contactSeed = null;    // 今回Qを探索した種（初回接触時はP自身、以降は垂線の足R）
 let contactFoot = null;    // 垂線の足R（初回接触時はnullのまま）
 
+// リミットサイクル対策（GaussianViewHaptics.cppのAdaptation1/Adaptation2に対応）
+// 'normal': 対策なし（垂線の足Rをそのまま種にする）
+// 'adaptation1': Rが表面の外側なら、Rを前回の接触点Qとの中点まで引き戻す
+// 'adaptation2': Rから探索・再投影を繰り返し、収束するまでRをQとの中点へ半分ずつ引き戻す
+let contactAdaptationMode = 'normal';
+
 
 // ============ SURFACE SEARCH (接触状態の更新) ============
 
@@ -137,7 +143,30 @@ function updateSurfaceSearch(p) {
     return;
   }
 
-  const r = projectPointOntoLine(p.x, p.y, contactPoint.x, contactPoint.y, contactTangent.tx, contactTangent.ty);
+  let r = projectPointOntoLine(p.x, p.y, contactPoint.x, contactPoint.y, contactTangent.tx, contactTangent.ty);
+
+  if (contactAdaptationMode === 'adaptation1') {
+    // Rが表面の外側なら、Qとの中点まで引き戻す
+    const { val } = calcValueAndGrad(r.x, r.y);
+    if (Number.isFinite(val) && !isInsideObject(val)) {
+      r = { x: 0.5 * (r.x + contactPoint.x), y: 0.5 * (r.y + contactPoint.y) };
+    }
+  } else if (contactAdaptationMode === 'adaptation2') {
+    // Rから探索・再投影した結果とQとの距離が安定するまで、Rを半分ずつQへ引き戻す
+    const maxDist = Math.hypot(r.x - contactPoint.x, r.y - contactPoint.y);
+    let curDist = maxDist;
+    const maxIter = 10;
+    for (let i = 0; i < maxIter; i++) {
+      const p1tmp = findSurfaceFromSeed(r.x, r.y);
+      const tangentTmp = getNormalAndTangent(p1tmp.x, p1tmp.y);
+      if (!tangentTmp) break;
+      const p2 = projectPointOntoLine(p.x, p.y, p1tmp.x, p1tmp.y, tangentTmp.tx, tangentTmp.ty);
+      curDist = Math.hypot(p2.x - contactPoint.x, p2.y - contactPoint.y);
+      r = { x: 0.5 * (r.x + contactPoint.x), y: 0.5 * (r.y + contactPoint.y) };
+      if (Math.abs(curDist - maxDist) < 1e-4) break;
+    }
+  }
+
   const q = findSurfaceFromSeed(r.x, r.y);
 
   contactFoot = r;
@@ -792,6 +821,15 @@ fieldTypeRadios.forEach(radio => {
     contourStepValue.textContent = contourStep.toFixed(2);
 
     updateSliderState();
+    render();
+  });
+});
+
+// 接触適応モード切り替え（Normal / Adaptation1 / Adaptation2）
+const contactAdaptationRadios = document.querySelectorAll('input[name="contactAdaptation"]');
+contactAdaptationRadios.forEach(radio => {
+  radio.addEventListener('change', (e) => {
+    contactAdaptationMode = e.target.value;
     render();
   });
 });
