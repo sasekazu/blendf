@@ -31,10 +31,12 @@ Open `index.html` directly in a browser, or visit the GitHub Pages link above. I
 |---|---|
 | `index.html` | Top page, links to the visualization pages |
 | `step-by-step.html` | Step by Step Visualization UI layout and controls |
-| `style.css` | Styling |
-| `main.js` | Canvas rendering and mouse interaction |
-| `renderer.js` | Heatmap and contour drawing |
-| `field-math.js` | Mathematical field functions |
+| `main.js` | Step by Step: canvas rendering and interaction |
+| `renderer.js` | Step by Step: heatmap and contour drawing |
+| `mouse-interaction.html` | Mouse Interaction UI layout and controls |
+| `mouse-interaction.js` | Mouse Interaction: canvas rendering and interaction |
+| `style.css` | Shared styling |
+| `field-math.js` | Shared mathematical field functions |
 
 ## License
 
