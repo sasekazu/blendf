@@ -268,6 +268,63 @@ function findSurfaceFromSeed(seedX, seedY) {
   return { x, y, found: true };
 }
 
+// 点(x,y)におけるスカラー場の法線・接線を計算する。
+// 法線 = 勾配方向（正規化）、接線 = 法線を90°回転した方向。
+// 勾配がほぼ0（平坦）の場合は接線を定義できないためnullを返す。
+function getNormalAndTangent(x, y) {
+  const { gx, gy } = calcValueAndGrad(x, y);
+  const gNorm = Math.sqrt(gx * gx + gy * gy);
+  if (gNorm < 1e-6) return null;
+
+  const nx = gx / gNorm;
+  const ny = gy / gNorm;
+  const tx = -ny;
+  const ty = nx;
+
+  return { nx, ny, tx, ty };
+}
+
+// 点(px,py)を、点(lineX,lineY)を通り方向(dirX,dirY)（正規化済み前提）の直線へ
+// 正射影した点（垂線の足）を返す。
+function projectPointOntoLine(px, py, lineX, lineY, dirX, dirY) {
+  const dx = px - lineX;
+  const dy = py - lineY;
+  const t = dx * dirX + dy * dirY;
+  return { x: lineX + t * dirX, y: lineY + t * dirY };
+}
+
+// P0, P1, P2, ... のチェーンから R_i / Q_i を順に求める。
+// i=0: P_0自身を種として表面探索 → Q_0
+// i>=1: 直前のQ_{i-1}での接線にP_iから垂線を下ろした足をR_iとし、
+//       R_iを種として表面探索 → Q_i
+// （接線が定義できない場合はP_iを直接種にするフォールバック）
+function computeSurfaceChain(points) {
+  const chain = [];
+  let prevTangentOrigin = null; // 直前のQ_{i-1}の位置
+  let prevTangent = null;       // 直前のQ_{i-1}での接線情報
+
+  for (let i = 0; i < points.length; i++) {
+    const p = getActualPos(points[i]);
+    let r = null;
+    let seed = p;
+
+    if (i > 0 && prevTangent) {
+      r = projectPointOntoLine(p.x, p.y, prevTangentOrigin.x, prevTangentOrigin.y, prevTangent.tx, prevTangent.ty);
+      seed = r;
+    }
+
+    const q = findSurfaceFromSeed(seed.x, seed.y);
+    const tangent = getNormalAndTangent(q.x, q.y);
+
+    chain.push({ p, r, q, tangent });
+
+    prevTangentOrigin = q;
+    prevTangent = tangent;
+  }
+
+  return chain;
+}
+
 // 個別のガウシアン/楕円のグリッドを計算
 function computeSingleFieldGrid(gaussianIndex) {
   const cols = Math.floor(width / gridStep) + 1;

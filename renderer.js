@@ -202,16 +202,15 @@ function drawGaussianCenters() {
   }
 }
 
-// 評価点Pを描画
-function drawPointP() {
+// 評価点P_iのマーカーを描画（P0, P1, ...共通）
+function drawEvalPoint(point, label) {
   const isMobile = window.innerWidth <= 1024;
   const baseRadius = isMobile ? 8 : 6;
 
-  const pos = getActualPos(pointP);
-  const isDragged = pointP === draggedPoint;
-  const isHovered = pointP === hoveredPoint;
+  const pos = getActualPos(point);
+  const isDragged = point === draggedPoint;
+  const isHovered = point === hoveredPoint;
 
-  // 点Pを目立たせるため十字マーカー＋丸で描画
   ctx.beginPath();
   ctx.arc(pos.x, pos.y, baseRadius, 0, Math.PI * 2);
 
@@ -238,47 +237,124 @@ function drawPointP() {
   ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
   ctx.fill();
 
-  // ラベル「P」
+  // ラベル
   ctx.font = 'bold 12px sans-serif';
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
-  ctx.fillText('P', pos.x, pos.y - baseRadius - 2);
+  ctx.fillText(label, pos.x, pos.y - baseRadius - 2);
 }
 
-// 点Pから探索して得られた表面上の点Qを描画（P-Q間を結ぶ線も表示）
-function drawPointQ() {
-  if (!pointQ) return;
+// すべての評価点P_iのみを描画（表面探索を表示しないときに使用）
+function drawPointsOnly() {
+  for (let i = 0; i < points.length; i++) {
+    drawEvalPoint(points[i], 'P' + i);
+  }
+}
 
+// 表面探索で見つかった点Q_iのマーカーを描画
+function drawFoundPoint(q, label) {
   const isMobile = window.innerWidth <= 1024;
   const baseRadius = isMobile ? 7 : 5;
-  const posP = getActualPos(pointP);
 
-  // PとQを結ぶ線（探索に失敗した場合は赤で表示）
   ctx.beginPath();
-  ctx.setLineDash([5, 3]);
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = pointQ.found ? 'rgba(120, 255, 150, 0.8)' : 'rgba(255, 90, 90, 0.8)';
-  ctx.moveTo(posP.x, posP.y);
-  ctx.lineTo(pointQ.x, pointQ.y);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  // 点Qのマーカー
-  ctx.beginPath();
-  ctx.arc(pointQ.x, pointQ.y, baseRadius, 0, Math.PI * 2);
-  ctx.fillStyle = pointQ.found ? '#55ff88' : '#ff5555';
-  ctx.strokeStyle = pointQ.found ? '#22cc55' : '#cc2222';
+  ctx.arc(q.x, q.y, baseRadius, 0, Math.PI * 2);
+  ctx.fillStyle = q.found ? '#55ff88' : '#ff5555';
+  ctx.strokeStyle = q.found ? '#22cc55' : '#cc2222';
   ctx.lineWidth = 2;
   ctx.fill();
   ctx.stroke();
 
-  // ラベル「Q」
   ctx.font = 'bold 12px sans-serif';
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
-  ctx.fillText('Q', pointQ.x, pointQ.y - baseRadius - 2);
+  ctx.fillText(label, q.x, q.y - baseRadius - 2);
+}
+
+// 垂線の足R_iのマーカーを描画
+function drawFootPoint(r, label) {
+  const baseRadius = 4;
+
+  ctx.beginPath();
+  ctx.arc(r.x, r.y, baseRadius, 0, Math.PI * 2);
+  ctx.fillStyle = '#cc66ff';
+  ctx.strokeStyle = '#9933cc';
+  ctx.lineWidth = 1.5;
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.font = 'bold 11px sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(label, r.x, r.y + baseRadius + 2);
+}
+
+// 点Qにおける表面の接線を描画
+// 法線 = スカラー場の勾配方向、接線 = 法線に垂直な方向
+function drawTangentAt(q, tangent) {
+  const { tx, ty } = tangent;
+
+  const halfLen = 40;
+  const x1 = q.x - tx * halfLen;
+  const y1 = q.y - ty * halfLen;
+  const x2 = q.x + tx * halfLen;
+  const y2 = q.y + ty * halfLen;
+
+  ctx.beginPath();
+  ctx.setLineDash([]);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#ffcc00';
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+}
+
+// P_i → R_i の垂線（薄いグレーの点線）を描画
+function drawPerpendicular(p, r) {
+  ctx.beginPath();
+  ctx.setLineDash([2, 3]);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(200, 200, 200, 0.6)';
+  ctx.moveTo(p.x, p.y);
+  ctx.lineTo(r.x, r.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+// 探索の種(seed: P_0またはR_i) → Q_i の破線を描画（探索失敗時は赤）
+function drawSeedToQ(seed, q) {
+  ctx.beginPath();
+  ctx.setLineDash([5, 3]);
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = q.found ? 'rgba(120, 255, 150, 0.8)' : 'rgba(255, 90, 90, 0.8)';
+  ctx.moveTo(seed.x, seed.y);
+  ctx.lineTo(q.x, q.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+// P0→Q0→R1→Q1→R2→Q2→... のチェーン全体を描画
+function drawSurfaceChain(chain) {
+  for (let i = 0; i < chain.length; i++) {
+    const { p, r, q, tangent } = chain[i];
+
+    if (tangent) {
+      drawTangentAt(q, tangent);
+    }
+
+    if (r) {
+      drawPerpendicular(p, r);
+      drawSeedToQ(r, q);
+      drawFootPoint(r, 'R' + i);
+    } else {
+      drawSeedToQ(p, q);
+    }
+
+    drawFoundPoint(q, 'Q' + i);
+    drawEvalPoint(points[i], 'P' + i);
+  }
 }
 
 // メイン描画関数
@@ -303,12 +379,11 @@ function render() {
 
   drawGaussianCenters();
 
-  // 点Pから表面上の点Qを探索して表示
+  // P0→Q0→R1→Q1→... のチェーンを探索して表示
   if (showSurfaceSearch) {
-    const posP = getActualPos(pointP);
-    pointQ = findSurfaceFromSeed(posP.x, posP.y);
-    drawPointQ();
+    surfaceChain = computeSurfaceChain(points);
+    drawSurfaceChain(surfaceChain);
+  } else {
+    drawPointsOnly();
   }
-
-  drawPointP();
 }

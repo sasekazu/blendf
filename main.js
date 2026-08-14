@@ -17,11 +17,12 @@ let gaussians = [
   { x: 0.722, y: 0.343, sx: 0.106, sy: 0.079, theta: 0.9, amp: 0.85 },
 ];
 
-// 評価点P（ガウシアンの中心と同様にドラッグで移動可能）
-let pointP = { x: 0.5, y: 0.7 };
+// 評価点 P0, P1, P2, ...（ガウシアンの中心と同様にドラッグで移動可能）
+// points[i] が P_i に対応。canvas上でpキーを押すと新しい点が末尾に追加される。
+let points = [{ x: 0.5, y: 0.7 }];
 
-// 点Pから探索されたスカラー場表面上の点Q（実座標）。render()内で毎回更新される。
-let pointQ = null;
+// P0→Q0→R1→Q1→... のチェーン計算結果。render()内で毎回更新される。
+let surfaceChain = [];
 
 // ガウシアンの相対座標を実座標に変換
 function getActualPos(g) {
@@ -68,6 +69,10 @@ let draggedPoint = null;
 let isDragging = false;
 let hoveredPoint = null;
 
+// pキーでの点追加用（canvas上でのマウス位置を追跡）
+let lastMousePos = null;
+let isMouseOverCanvas = false;
+
 
 // ============ MOUSE INTERACTION ============
 
@@ -84,7 +89,7 @@ function findPointAt(mx, my) {
   const isMobile = window.innerWidth <= 1024;
   const threshold = isMobile ? 44 : 20;
 
-  for (const g of [...gaussians, pointP]) {
+  for (const g of [...gaussians, ...points]) {
     const pos = getActualPos(g);
     const dx = mx - pos.x;
     const dy = my - pos.y;
@@ -106,9 +111,14 @@ canvas.addEventListener('mousedown', (e) => {
   }
 });
 
+canvas.addEventListener('mouseenter', () => {
+  isMouseOverCanvas = true;
+});
+
 canvas.addEventListener('mousemove', (e) => {
   const pos = getMousePos(e);
-  
+  lastMousePos = pos;
+
   if (isDragging && draggedPoint) {
     setActualPos(draggedPoint, pos.x, pos.y);
     render();
@@ -142,6 +152,23 @@ canvas.addEventListener('mouseleave', () => {
     canvas.style.cursor = 'default';
   }
   hoveredPoint = null;
+  isMouseOverCanvas = false;
+  lastMousePos = null;
+  render();
+});
+
+
+// ============ KEYBOARD INTERACTION ============
+
+// canvas上にマウスがある状態でpキーを押すと、その位置に新しい評価点Pnを追加する
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'p' && e.key !== 'P') return;
+  if (!isMouseOverCanvas || !lastMousePos) return;
+  if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+  const newPoint = { x: 0, y: 0 };
+  setActualPos(newPoint, lastMousePos.x, lastMousePos.y);
+  points.push(newPoint);
   render();
 });
 
