@@ -17,6 +17,9 @@ let gaussians = [
   { x: 0.722, y: 0.343, sx: 0.106, sy: 0.079, theta: 0.9, amp: 0.85 },
 ];
 
+// 評価点P（ガウシアンの中心と同様にドラッグで移動可能）
+let pointP = { x: 0.5, y: 0.7 };
+
 // ガウシアンの相対座標を実座標に変換
 function getActualPos(g) {
   return {
@@ -57,9 +60,9 @@ let logSumExpK = 0.5;
 let gaussianDirectTau = computeTauFromS(2.0);
 
 // ドラッグ操作用
-let draggedGaussian = null;
+let draggedPoint = null;
 let isDragging = false;
-let hoveredGaussian = null;
+let hoveredPoint = null;
 
 
 // ============ MOUSE INTERACTION ============
@@ -72,12 +75,12 @@ function getMousePos(e) {
   };
 }
 
-function findGaussianAt(mx, my) {
+function findPointAt(mx, my) {
   // モバイルではタップ領域を大きく（44px）、デスクトップでは小さく（20px）
   const isMobile = window.innerWidth <= 1024;
   const threshold = isMobile ? 44 : 20;
-  
-  for (const g of gaussians) {
+
+  for (const g of [...gaussians, pointP]) {
     const pos = getActualPos(g);
     const dx = mx - pos.x;
     const dy = my - pos.y;
@@ -91,9 +94,9 @@ function findGaussianAt(mx, my) {
 
 canvas.addEventListener('mousedown', (e) => {
   const pos = getMousePos(e);
-  const g = findGaussianAt(pos.x, pos.y);
+  const g = findPointAt(pos.x, pos.y);
   if (g) {
-    draggedGaussian = g;
+    draggedPoint = g;
     isDragging = true;
     canvas.style.cursor = 'grabbing';
   }
@@ -102,16 +105,16 @@ canvas.addEventListener('mousedown', (e) => {
 canvas.addEventListener('mousemove', (e) => {
   const pos = getMousePos(e);
   
-  if (isDragging && draggedGaussian) {
-    setActualPos(draggedGaussian, pos.x, pos.y);
+  if (isDragging && draggedPoint) {
+    setActualPos(draggedPoint, pos.x, pos.y);
     render();
   } else {
-    const g = findGaussianAt(pos.x, pos.y);
-    const wasHovered = hoveredGaussian !== null;
+    const g = findPointAt(pos.x, pos.y);
+    const wasHovered = hoveredPoint !== null;
     const isHovered = g !== null;
     
-    if (wasHovered !== isHovered || hoveredGaussian !== g) {
-      hoveredGaussian = g;
+    if (wasHovered !== isHovered || hoveredPoint !== g) {
+      hoveredPoint = g;
       render();
     }
     
@@ -122,7 +125,7 @@ canvas.addEventListener('mousemove', (e) => {
 canvas.addEventListener('mouseup', () => {
   if (isDragging) {
     isDragging = false;
-    draggedGaussian = null;
+    draggedPoint = null;
     canvas.style.cursor = 'default';
     render();
   }
@@ -131,10 +134,10 @@ canvas.addEventListener('mouseup', () => {
 canvas.addEventListener('mouseleave', () => {
   if (isDragging) {
     isDragging = false;
-    draggedGaussian = null;
+    draggedPoint = null;
     canvas.style.cursor = 'default';
   }
-  hoveredGaussian = null;
+  hoveredPoint = null;
   render();
 });
 
@@ -153,9 +156,9 @@ function getTouchPos(e) {
 canvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
   const pos = getTouchPos(e);
-  const g = findGaussianAt(pos.x, pos.y);
+  const g = findPointAt(pos.x, pos.y);
   if (g) {
-    draggedGaussian = g;
+    draggedPoint = g;
     isDragging = true;
     render();
   }
@@ -163,9 +166,9 @@ canvas.addEventListener('touchstart', (e) => {
 
 canvas.addEventListener('touchmove', (e) => {
   e.preventDefault();
-  if (isDragging && draggedGaussian) {
+  if (isDragging && draggedPoint) {
     const pos = getTouchPos(e);
-    setActualPos(draggedGaussian, pos.x, pos.y);
+    setActualPos(draggedPoint, pos.x, pos.y);
     render();
   }
 });
@@ -174,7 +177,7 @@ canvas.addEventListener('touchend', (e) => {
   e.preventDefault();
   if (isDragging) {
     isDragging = false;
-    draggedGaussian = null;
+    draggedPoint = null;
     render();
   }
 });
@@ -183,7 +186,7 @@ canvas.addEventListener('touchcancel', (e) => {
   e.preventDefault();
   if (isDragging) {
     isDragging = false;
-    draggedGaussian = null;
+    draggedPoint = null;
     render();
   }
 });

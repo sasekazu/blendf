@@ -169,8 +169,8 @@ function drawGaussianCenters() {
   
   for (const g of gaussians) {
     const pos = getActualPos(g);
-    const isDragged = g === draggedGaussian;
-    const isHovered = g === hoveredGaussian;
+    const isDragged = g === draggedPoint;
+    const isHovered = g === hoveredPoint;
     
     // ガウシアンの中心点（大きめに）
     ctx.beginPath();
@@ -202,6 +202,50 @@ function drawGaussianCenters() {
   }
 }
 
+// 評価点Pを描画
+function drawPointP() {
+  const isMobile = window.innerWidth <= 1024;
+  const baseRadius = isMobile ? 8 : 6;
+
+  const pos = getActualPos(pointP);
+  const isDragged = pointP === draggedPoint;
+  const isHovered = pointP === hoveredPoint;
+
+  // 点Pを目立たせるため十字マーカー＋丸で描画
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, baseRadius, 0, Math.PI * 2);
+
+  if (isDragged) {
+    ctx.fillStyle = '#66ccff';
+    ctx.strokeStyle = '#2299ff';
+    ctx.lineWidth = 3;
+  } else if (isHovered) {
+    ctx.fillStyle = '#55bbff';
+    ctx.strokeStyle = '#3399ee';
+    ctx.lineWidth = 2;
+  } else {
+    ctx.fillStyle = '#44aaff';
+    ctx.strokeStyle = '#3388cc';
+    ctx.lineWidth = 1;
+  }
+
+  ctx.fill();
+  ctx.stroke();
+
+  // 内側の白い点
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, baseRadius * 0.4, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+  ctx.fill();
+
+  // ラベル「P」
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('P', pos.x, pos.y - baseRadius - 2);
+}
+
 // メイン描画関数
 function render() {
   ctx.clearRect(0, 0, width, height);
@@ -223,4 +267,5 @@ function render() {
   }
   
   drawGaussianCenters();
+  drawPointP();
 }
