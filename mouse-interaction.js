@@ -68,6 +68,84 @@ let selectedGaussian = null;
 let lastMousePos = null;
 let isMouseOverCanvas = false;
 
+// 表面探査の接触状態（GaussianViewHaptics.cpp の hapticRenderLoop を参考）
+// 最初は非接触から開始し、Pが物体内部に侵入したかどうかで接触に切り替える。
+let colliding = false;
+let contactPoint = null;   // Q（実座標）。接触中のみ有効
+let contactTangent = null; // Qでの法線・接線（{nx,ny,tx,ty}）。接触中のみ有効
+let contactSeed = null;    // 今回Qを探索した種（初回接触時はP自身、以降は垂線の足R）
+let contactFoot = null;    // 垂線の足R（初回接触時はnullのまま）
+
+
+// ============ SURFACE SEARCH (接触状態の更新) ============
+
+// フィールドタイプにより「val>0」が物体の内部/外部どちらを意味するかが異なる
+// （drawHeatmapの極性反転と同じ理由）:
+// - ellipsoidLogSumExp: 中心ほど値が小さいC++と同じ極性 → val<0が内部
+// - gaussian（直接和）: 中心ほど値が大きい山型 → val>0が内部
+function isInsideObject(val) {
+  return fieldType === 'ellipsoidLogSumExp' ? val < 0 : val > 0;
+}
+
+// 現在のP（実座標）を元に接触状態を更新する。
+// 非接触時: 陰関数の符号からPが内部に侵入したかを判定し、侵入していればPを種として
+//           表面探査を行いQを決定、接触状態に切り替える。
+// 接触時: 前ステップのQ・接線を使ってまず接触が外れていないか判定する
+//         （GaussianViewHaptics.cppの (p - c)·n > 0 と同等の条件。極性はフィールド
+//         タイプに応じて反転させる）。外れていなければ、前のQの接線にPから垂線を
+//         下ろした足Rを種として新しいQを探索する（step-by-stepのR_i/Q_iと同じ手順）。
+function updateSurfaceSearch(p) {
+  if (!colliding) {
+    contactFoot = null;
+
+    const { val } = calcValueAndGrad(p.x, p.y);
+    if (Number.isFinite(val) && isInsideObject(val)) {
+      const q = findSurfaceFromSeed(p.x, p.y);
+      colliding = true;
+      contactPoint = q;
+      contactTangent = getNormalAndTangent(q.x, q.y);
+      contactSeed = p;
+    } else {
+      contactPoint = null;
+      contactTangent = null;
+      contactSeed = null;
+    }
+    return;
+  }
+
+  if (!contactTangent) {
+    // 接線が定義できない（勾配ほぼ0）場合は接触状態を維持できないため解除
+    colliding = false;
+    contactPoint = null;
+    contactTangent = null;
+    contactSeed = null;
+    contactFoot = null;
+    return;
+  }
+
+  const outwardSign = fieldType === 'ellipsoidLogSumExp' ? 1 : -1;
+  const distanceFromSurface =
+    (p.x - contactPoint.x) * contactTangent.nx +
+    (p.y - contactPoint.y) * contactTangent.ny;
+
+  if (outwardSign * distanceFromSurface > 0) {
+    colliding = false;
+    contactPoint = null;
+    contactTangent = null;
+    contactSeed = null;
+    contactFoot = null;
+    return;
+  }
+
+  const r = projectPointOntoLine(p.x, p.y, contactPoint.x, contactPoint.y, contactTangent.tx, contactTangent.ty);
+  const q = findSurfaceFromSeed(r.x, r.y);
+
+  contactFoot = r;
+  contactSeed = r;
+  contactPoint = q;
+  contactTangent = getNormalAndTangent(q.x, q.y);
+}
+
 
 // ============ RENDERING FUNCTIONS ============
 
@@ -316,6 +394,81 @@ function drawMouseP() {
   ctx.fillText('P', pos.x, pos.y - baseRadius - 2);
 }
 
+// 接触中のQでの接線を描画
+function drawContactTangent() {
+  if (!contactPoint || !contactTangent) return;
+
+  const { tx, ty } = contactTangent;
+  const halfLen = 40;
+
+  ctx.beginPath();
+  ctx.setLineDash([]);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#ffcc00';
+  ctx.moveTo(contactPoint.x - tx * halfLen, contactPoint.y - ty * halfLen);
+  ctx.lineTo(contactPoint.x + tx * halfLen, contactPoint.y + ty * halfLen);
+  ctx.stroke();
+}
+
+// P → R（垂線の足）を薄いグレーの点線で描画
+function drawContactPerpendicular(p) {
+  if (!contactFoot) return;
+
+  ctx.beginPath();
+  ctx.setLineDash([2, 3]);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(200, 200, 200, 0.6)';
+  ctx.moveTo(p.x, p.y);
+  ctx.lineTo(contactFoot.x, contactFoot.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  const baseRadius = 4;
+  ctx.beginPath();
+  ctx.arc(contactFoot.x, contactFoot.y, baseRadius, 0, Math.PI * 2);
+  ctx.fillStyle = '#cc66ff';
+  ctx.strokeStyle = '#9933cc';
+  ctx.lineWidth = 1.5;
+  ctx.fill();
+  ctx.stroke();
+}
+
+// 探索の種（初回接触時はP、以降はR）→ Q の破線を描画
+function drawContactSeedToQ() {
+  if (!contactSeed || !contactPoint) return;
+
+  ctx.beginPath();
+  ctx.setLineDash([5, 3]);
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'rgba(120, 255, 150, 0.8)';
+  ctx.moveTo(contactSeed.x, contactSeed.y);
+  ctx.lineTo(contactPoint.x, contactPoint.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+// 接触点Qのマーカーを描画
+function drawContactPoint() {
+  if (!contactPoint) return;
+
+  const isMobile = window.innerWidth <= 1024;
+  const baseRadius = isMobile ? 7 : 5;
+
+  ctx.beginPath();
+  ctx.arc(contactPoint.x, contactPoint.y, baseRadius, 0, Math.PI * 2);
+  ctx.fillStyle = '#55ff88';
+  ctx.strokeStyle = '#22cc55';
+  ctx.lineWidth = 2;
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('Q', contactPoint.x, contactPoint.y - baseRadius - 2);
+}
+
 // メイン描画関数
 function render() {
   ctx.clearRect(0, 0, width, height);
@@ -337,6 +490,25 @@ function render() {
   }
 
   drawGaussianCenters();
+
+  // 表面探査の接触状態を更新して表示
+  if (isMouseOverCanvas && lastMousePos) {
+    updateSurfaceSearch(lastMousePos);
+  } else {
+    colliding = false;
+    contactPoint = null;
+    contactTangent = null;
+    contactSeed = null;
+    contactFoot = null;
+  }
+
+  drawContactTangent();
+  if (lastMousePos) {
+    drawContactPerpendicular(lastMousePos);
+  }
+  drawContactSeedToQ();
+  drawContactPoint();
+
   drawMouseP();
 }
 
