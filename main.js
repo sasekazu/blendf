@@ -237,6 +237,26 @@ window.addEventListener('keydown', (e) => {
   render();
 });
 
+// 選択中のガウシアンをeキーで削除する
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'e' && e.key !== 'E') return;
+  if (!selectedGaussian) return;
+  if (isTypingIntoField()) return;
+
+  const idx = gaussians.indexOf(selectedGaussian);
+  if (idx !== -1) gaussians.splice(idx, 1);
+
+  if (draggedPoint === selectedGaussian) {
+    draggedPoint = null;
+    isDragging = false;
+  }
+  if (hoveredPoint === selectedGaussian) {
+    hoveredPoint = null;
+  }
+  selectedGaussian = null;
+  render();
+});
+
 
 // ============ TOUCH INTERACTION ============
 
