@@ -285,6 +285,37 @@ function drawGaussianCenters() {
   }
 }
 
+// 現在のマウス位置に評価点Pを表示する
+// （マウスがcanvas上にあるときだけ描画。ドラッグ/追加操作は持たない、単なる現在位置の表示）
+function drawMouseP() {
+  if (!isMouseOverCanvas || !lastMousePos) return;
+
+  const isMobile = window.innerWidth <= 1024;
+  const baseRadius = isMobile ? 8 : 6;
+  const pos = lastMousePos;
+
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, baseRadius, 0, Math.PI * 2);
+  ctx.fillStyle = '#44aaff';
+  ctx.strokeStyle = '#3388cc';
+  ctx.lineWidth = 1;
+  ctx.fill();
+  ctx.stroke();
+
+  // 内側の白い点
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, baseRadius * 0.4, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+  ctx.fill();
+
+  // ラベル「P」
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('P', pos.x, pos.y - baseRadius - 2);
+}
+
 // メイン描画関数
 function render() {
   ctx.clearRect(0, 0, width, height);
@@ -306,6 +337,7 @@ function render() {
   }
 
   drawGaussianCenters();
+  drawMouseP();
 }
 
 
@@ -348,8 +380,10 @@ canvas.addEventListener('mousedown', (e) => {
   render();
 });
 
-canvas.addEventListener('mouseenter', () => {
+canvas.addEventListener('mouseenter', (e) => {
   isMouseOverCanvas = true;
+  lastMousePos = getMousePos(e);
+  render();
 });
 
 canvas.addEventListener('mousemove', (e) => {
@@ -358,19 +392,14 @@ canvas.addEventListener('mousemove', (e) => {
 
   if (isDragging && draggedPoint) {
     setActualPos(draggedPoint, pos.x, pos.y);
-    render();
   } else {
     const g = findGaussianAt(pos.x, pos.y);
-    const wasHovered = hoveredPoint !== null;
-    const isHovered = g !== null;
-
-    if (wasHovered !== isHovered || hoveredPoint !== g) {
-      hoveredPoint = g;
-      render();
-    }
-
+    hoveredPoint = g;
     canvas.style.cursor = g ? 'grab' : 'default';
   }
+
+  // 点Pは常にマウス位置を追従するため毎回再描画する
+  render();
 });
 
 canvas.addEventListener('mouseup', () => {
