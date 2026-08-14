@@ -160,15 +160,40 @@ canvas.addEventListener('mouseleave', () => {
 
 // ============ KEYBOARD INTERACTION ============
 
+// テキスト入力中かどうか（ラジオ/チェックボックス/レンジは対象外。
+// クリック後もフォーカスが残るため、tagNameだけで判定するとそれらまで誤ってブロックしてしまう）
+function isTypingIntoField() {
+  const el = document.activeElement;
+  if (!el) return false;
+  if (el.tagName === 'TEXTAREA') return true;
+  if (el.tagName === 'INPUT') {
+    const textTypes = ['text', 'search', 'email', 'url', 'tel', 'password', 'number'];
+    return textTypes.includes(el.type);
+  }
+  return false;
+}
+
 // canvas上にマウスがある状態でpキーを押すと、その位置に新しい評価点Pnを追加する
 window.addEventListener('keydown', (e) => {
   if (e.key !== 'p' && e.key !== 'P') return;
   if (!isMouseOverCanvas || !lastMousePos) return;
-  if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+  if (isTypingIntoField()) return;
 
   const newPoint = { x: 0, y: 0 };
   setActualPos(newPoint, lastMousePos.x, lastMousePos.y);
   points.push(newPoint);
+  render();
+});
+
+// canvas上にマウスがある状態でgキーを押すと、その位置に新しいガウシアンを追加する
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'g' && e.key !== 'G') return;
+  if (!isMouseOverCanvas || !lastMousePos) return;
+  if (isTypingIntoField()) return;
+
+  const newGaussian = { x: 0, y: 0, sx: 0.08, sy: 0.08, theta: 0, amp: 1.0 };
+  setActualPos(newGaussian, lastMousePos.x, lastMousePos.y);
+  gaussians.push(newGaussian);
   render();
 });
 
