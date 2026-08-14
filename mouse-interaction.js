@@ -79,8 +79,12 @@ let contactFoot = null;    // 垂線の足R（初回接触時はnullのまま）
 // リミットサイクル対策（GaussianViewHaptics.cppのAdaptation1/Adaptation2に対応）
 // 'normal': 対策なし（垂線の足Rをそのまま種にする）
 // 'adaptation1': Rが表面の外側なら、Rを前回の接触点Qとの中点まで引き戻す
-// 'adaptation2': Rから探索・再投影を繰り返し、収束するまでRをQとの中点へ半分ずつ引き戻す
+// 'adaptation2': Rから探索・再投影を繰り返し、収束するまでRをQへ徐々に引き戻す
 let contactAdaptationMode = 'normal';
+
+// Adaptation2の1反復あたりの引き戻し量（0=まったく引き戻さない=通常探索と同等、
+// 1=毎回Qへ完全にスナップ=最も強い貼り付き）。C++元コードの0.5f固定値に対応。
+let adaptation2DampingFactor = 0.5;
 
 
 // ============ SURFACE SEARCH (接触状態の更新) ============
@@ -152,17 +156,18 @@ function updateSurfaceSearch(p) {
       r = { x: 0.5 * (r.x + contactPoint.x), y: 0.5 * (r.y + contactPoint.y) };
     }
   } else if (contactAdaptationMode === 'adaptation2') {
-    // Rから探索・再投影した結果とQとの距離が安定するまで、Rを半分ずつQへ引き戻す
+    // Rから探索・再投影した結果とQとの距離が安定するまで、Rを徐々にQへ引き戻す
     const maxDist = Math.hypot(r.x - contactPoint.x, r.y - contactPoint.y);
     let curDist = maxDist;
     const maxIter = 10;
+    const k = adaptation2DampingFactor;
     for (let i = 0; i < maxIter; i++) {
       const p1tmp = findSurfaceFromSeed(r.x, r.y);
       const tangentTmp = getNormalAndTangent(p1tmp.x, p1tmp.y);
       if (!tangentTmp) break;
       const p2 = projectPointOntoLine(p.x, p.y, p1tmp.x, p1tmp.y, tangentTmp.tx, tangentTmp.ty);
       curDist = Math.hypot(p2.x - contactPoint.x, p2.y - contactPoint.y);
-      r = { x: 0.5 * (r.x + contactPoint.x), y: 0.5 * (r.y + contactPoint.y) };
+      r = { x: r.x + (contactPoint.x - r.x) * k, y: r.y + (contactPoint.y - r.y) * k };
       if (Math.abs(curDist - maxDist) < 1e-4) break;
     }
   }
@@ -804,6 +809,17 @@ function updateSliderState() {
   }
 }
 
+const adaptation2DampingSlider = document.getElementById('adaptation2DampingSlider');
+const adaptation2DampingValue = document.getElementById('adaptation2DampingValue');
+const adaptation2DampingControl = document.getElementById('adaptation2DampingControl');
+function updateAdaptationControlState() {
+  const isAdaptation2 = contactAdaptationMode === 'adaptation2';
+  adaptation2DampingSlider.disabled = !isAdaptation2;
+  if (adaptation2DampingControl) {
+    adaptation2DampingControl.style.opacity = isAdaptation2 ? '1' : '0.5';
+  }
+}
+
 // フィールドタイプ切り替え
 fieldTypeRadios.forEach(radio => {
   radio.addEventListener('change', (e) => {
@@ -830,8 +846,16 @@ const contactAdaptationRadios = document.querySelectorAll('input[name="contactAd
 contactAdaptationRadios.forEach(radio => {
   radio.addEventListener('change', (e) => {
     contactAdaptationMode = e.target.value;
+    updateAdaptationControlState();
     render();
   });
+});
+
+// Adaptation2の引き戻し量パラメータ
+adaptation2DampingSlider.addEventListener('input', (e) => {
+  adaptation2DampingFactor = parseFloat(e.target.value);
+  adaptation2DampingValue.textContent = adaptation2DampingFactor.toFixed(2);
+  render();
 });
 
 // 半径 s パラメータ
@@ -997,6 +1021,7 @@ if (gaussianRadio) {
 }
 
 updateSliderState();
+updateAdaptationControlState();
 
 // 初期キャンバスサイズを設定
 resizeCanvas();
@@ -1032,5 +1057,8 @@ contourStepValue.textContent = contourStep.toFixed(2);
 
 gridStepSlider.value = gridStep;
 gridStepValue.textContent = gridStep;
+
+adaptation2DampingSlider.value = adaptation2DampingFactor;
+adaptation2DampingValue.textContent = adaptation2DampingFactor.toFixed(2);
 
 render();
