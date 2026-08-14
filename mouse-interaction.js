@@ -86,6 +86,11 @@ let contactAdaptationMode = 'normal';
 // 1=毎回Qへ完全にスナップ=最も強い貼り付き）。C++元コードの0.5f固定値に対応。
 let adaptation2DampingFactor = 0.5;
 
+// 表面探査ステップの更新間隔[ms]。マウスが動いていなくても一定間隔でステップを進める
+// （GaussianViewHaptics.cppのhapticRenderLoopが一定周期で回り続けるのと同じ考え方）。
+let updateIntervalMs = 100;
+let updateTimerId = null;
+
 
 // ============ SURFACE SEARCH (接触状態の更新) ============
 
@@ -503,7 +508,8 @@ function drawContactPoint() {
   ctx.fillText('Q', contactPoint.x, contactPoint.y - baseRadius - 2);
 }
 
-// メイン描画関数
+// メイン描画関数（現在の状態を描画するだけで、表面探査のステップ自体は進めない。
+// ステップの実行はstepSurfaceSearch()が一定時間間隔のタイマーから行う）
 function render() {
   ctx.clearRect(0, 0, width, height);
   const grid = computeFieldGrid();
@@ -525,7 +531,20 @@ function render() {
 
   drawGaussianCenters();
 
-  // 表面探査の接触状態を更新して表示
+  drawContactTangent();
+  if (lastMousePos) {
+    drawContactPerpendicular(lastMousePos);
+  }
+  drawContactSeedToQ();
+  drawContactPoint();
+
+  drawMouseP();
+}
+
+// 表面探査を1ステップ進めてから再描画する。
+// マウスが動いていなくても一定時間間隔のタイマーから呼ばれ続けることで、
+// 静止中も接触状態の更新が継続する。
+function stepSurfaceSearch() {
   if (isMouseOverCanvas && lastMousePos) {
     updateSurfaceSearch(lastMousePos);
   } else {
@@ -535,15 +554,15 @@ function render() {
     contactSeed = null;
     contactFoot = null;
   }
+  render();
+}
 
-  drawContactTangent();
-  if (lastMousePos) {
-    drawContactPerpendicular(lastMousePos);
+// 表面探査ステップの更新タイマーを（再）起動する。間隔変更時に呼び直す。
+function restartUpdateTimer() {
+  if (updateTimerId !== null) {
+    clearInterval(updateTimerId);
   }
-  drawContactSeedToQ();
-  drawContactPoint();
-
-  drawMouseP();
+  updateTimerId = setInterval(stepSurfaceSearch, updateIntervalMs);
 }
 
 
@@ -626,6 +645,14 @@ canvas.addEventListener('mouseleave', () => {
   hoveredPoint = null;
   isMouseOverCanvas = false;
   lastMousePos = null;
+
+  // マウスがcanvas外に出たら次のタイマー更新を待たずに接触状態を即座に解除する
+  colliding = false;
+  contactPoint = null;
+  contactTangent = null;
+  contactSeed = null;
+  contactFoot = null;
+
   render();
 });
 
@@ -858,6 +885,15 @@ adaptation2DampingSlider.addEventListener('input', (e) => {
   render();
 });
 
+// 表面探査ステップの更新間隔
+const updateIntervalSlider = document.getElementById('updateIntervalSlider');
+const updateIntervalValue = document.getElementById('updateIntervalValue');
+updateIntervalSlider.addEventListener('input', (e) => {
+  updateIntervalMs = parseInt(e.target.value);
+  updateIntervalValue.textContent = updateIntervalMs;
+  restartUpdateTimer();
+});
+
 // 半径 s パラメータ
 ellipsoidSSlider.addEventListener('input', (e) => {
   ellipsoidS = parseFloat(e.target.value);
@@ -1060,5 +1096,11 @@ gridStepValue.textContent = gridStep;
 
 adaptation2DampingSlider.value = adaptation2DampingFactor;
 adaptation2DampingValue.textContent = adaptation2DampingFactor.toFixed(2);
+
+updateIntervalSlider.value = updateIntervalMs;
+updateIntervalValue.textContent = updateIntervalMs;
+
+// 表面探査ステップの定期更新を開始（マウスが静止していても継続する）
+restartUpdateTimer();
 
 render();
